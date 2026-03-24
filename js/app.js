@@ -382,11 +382,20 @@ function renderPerfil(){
   const since = sess?.createdAt ? new Date(sess.createdAt).toLocaleDateString('es-CO',{year:'numeric',month:'long'}) : '';
   document.getElementById('perf-since').textContent = since ? 'Miembro desde '+since : '';
 
-  // Plan
+  // Plan / rol
   const premium = isPremium();
   const badge   = document.getElementById('perf-plan-badge');
-  badge.className = 'plan-badge '+(premium?'premium':'free');
-  badge.textContent = premium ? '✨ LactaMe+' : '🫧 Plan Gratis';
+  const roleKey = sess?.role;
+  if(roleKey === 'owner'){
+    badge.className = 'plan-badge owner';
+    badge.textContent = '👑 Owner';
+  } else if(roleKey === 'admin'){
+    badge.className = 'plan-badge owner';
+    badge.textContent = '🛡️ Admin';
+  } else {
+    badge.className = 'plan-badge '+(premium?'premium':'free');
+    badge.textContent = premium ? '✨ LactaMe+' : '🫧 Plan Gratis';
+  }
   document.getElementById('upgrade-card').style.display = premium ? 'none' : 'flex';
 
   // Ajustes
@@ -408,6 +417,13 @@ function renderPerfil(){
     const el=document.getElementById('btn-baby-'+u);
     if(el) el.classList.toggle('active', u===babyWeightUnit);
   });
+
+  // Panel admin
+  const adminSec=document.getElementById('admin-section');
+  if(adminSec){
+    adminSec.style.display=isAdmin()?'block':'none';
+    if(isAdmin()) openAdminTab('mensajes');
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -661,7 +677,7 @@ function subUpgrade(){
 }
 
 function isPremium(){
-  return sess?.plan === 'premium';
+  return sess?.plan === 'premium' || ['owner','admin'].includes(sess?.role);
 }
 
 /* ══════════════════════════════════════════
@@ -1034,6 +1050,77 @@ function delMeasure(id){
   saveBabyDB();
   renderBebe();
   toast('🗑️ Eliminada');
+}
+
+/* ══════════════════════════════════════════
+   PANEL DE ADMINISTRACIÓN
+══════════════════════════════════════════ */
+function isAdmin(){ return ['owner','admin'].includes(sess?.role); }
+
+function openAdminTab(tab){
+  ['mensajes','usuarios'].forEach(t=>{
+    const btn=document.getElementById('atab-'+t);
+    const pnl=document.getElementById('admin-'+t);
+    if(btn) btn.classList.toggle('active', t===tab);
+    if(pnl) pnl.style.display = t===tab ? 'block' : 'none';
+  });
+  if(tab==='mensajes') loadAdminFeedback();
+  if(tab==='usuarios') loadAdminUsers();
+}
+
+async function loadAdminFeedback(){
+  const el=document.getElementById('admin-feedback-list');
+  if(!el) return;
+  el.innerHTML='<div class="admin-loading">Cargando mensajes...</div>';
+  try{
+    const{data,error}=await sb.from('feedback').select('*').order('created_at',{ascending:false});
+    if(error) throw error;
+    if(!data?.length){el.innerHTML='<div class="admin-empty">No hay mensajes aún.</div>';return;}
+    el.innerHTML=data.map(f=>`
+      <div class="fb-card ${f.read?'fb-read':'fb-unread'}">
+        <div class="fb-hdr">
+          <div class="fb-email">${esc(f.email||'Sin correo')}</div>
+          <div class="fb-date">${new Date(f.created_at).toLocaleDateString('es-CO')}</div>
+          ${!f.read?`<button class="btn-fb-read" onclick="markRead('${f.id}')">✓ Leído</button>`:'<span class="fb-badge-read">✓ Leído</span>'}
+        </div>
+        <div class="fb-msg">${esc(f.message)}</div>
+      </div>`).join('');
+  }catch{el.innerHTML='<div class="admin-empty">Error al cargar mensajes.</div>';}
+}
+
+async function markRead(id){
+  await sb.from('feedback').update({read:true}).eq('id',id);
+  loadAdminFeedback();
+}
+
+async function loadAdminUsers(){
+  const el=document.getElementById('admin-users-list');
+  if(!el) return;
+  el.innerHTML='<div class="admin-loading">Cargando usuarios...</div>';
+  try{
+    const{data,error}=await sb.from('profiles').select('id,username,display_name,role,plan,created_at').order('created_at',{ascending:false});
+    if(error) throw error;
+    if(!data?.length){el.innerHTML='<div class="admin-empty">No hay usuarios aún.</div>';return;}
+    el.innerHTML=data.map(u=>`
+      <div class="user-card">
+        <div class="user-av">${(u.display_name||u.username||'?').slice(0,1).toUpperCase()}</div>
+        <div class="user-info">
+          <div class="user-name">${esc(u.display_name||u.username)}</div>
+          <div class="user-sub">@${esc(u.username)} · ${u.plan||'free'}</div>
+        </div>
+        <select class="role-sel" onchange="changeRole('${u.id}',this.value)" ${u.id===sess.uid?'disabled':''}>
+          ${Object.entries(ROLES).map(([k,v])=>`<option value="${k}" ${u.role===k?'selected':''}>${v.lbl||k}</option>`).join('')}
+        </select>
+      </div>`).join('');
+  }catch(e){el.innerHTML='<div class="admin-empty">Error al cargar usuarios.</div>';}
+}
+
+async function changeRole(userId, role){
+  try{
+    const{error}=await sb.from('profiles').update({role}).eq('id',userId);
+    if(error) throw error;
+    toast('✅ Rol actualizado');
+  }catch(e){toast('❌ Error: '+e.message);}
 }
 
 /* ══════════════════════════════════════════

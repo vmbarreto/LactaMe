@@ -515,6 +515,8 @@ button:active,
 .plan-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:50px;font-family:var(--font-sans);font-size:.72rem;font-weight:600;margin-top:10px;}
 .plan-badge.free{background:rgba(245,213,207,.6);color:var(--warm-brown);}
 .plan-badge.premium{background:linear-gradient(135deg,rgba(200,150,10,.2),rgba(255,200,60,.2));color:var(--gold-dark);border:1px solid rgba(200,150,10,.3);}
+.plan-badge.owner{background:linear-gradient(135deg,rgba(100,60,180,.18),rgba(60,100,200,.18));color:#6040c0;border:1px solid rgba(100,60,180,.25);}
+[data-theme="dark"] .plan-badge.owner{color:#b090ff;border-color:rgba(160,120,255,.3);background:linear-gradient(135deg,rgba(100,60,180,.3),rgba(60,100,200,.25));}
 
 /* Upgrade card */
 .upgrade-card{background:linear-gradient(135deg,rgba(255,243,210,.8),rgba(255,224,130,.5));border-radius:28px;padding:18px 20px;margin-bottom:16px;border:1px solid rgba(200,150,10,.25);display:flex;align-items:center;gap:14px;}
@@ -777,3 +779,37 @@ button:active,
 .sa-stop-btn{flex-shrink:0;background:rgba(220,100,80,.12);color:#c05040;border:1px solid rgba(220,100,80,.25);border-radius:50px;padding:7px 12px;font-family:var(--font-sans);font-size:.68rem;font-weight:600;cursor:pointer;}
 [data-theme="dark"] .stats-alarm-card{background:rgba(15,21,37,.9);border:1px solid rgba(204,136,136,.12);}
 [data-theme="dark"] .sa-cfg-btn{background:rgba(204,136,136,.15);color:#cc8888;}
+
+/* ══ PANEL DE ADMINISTRACIÓN ══ */
+.admin-section{margin-top:4px;}
+.admin-tabs{display:flex;gap:8px;margin-bottom:12px;}
+.admin-tab{flex:1;padding:9px 8px;border:1.5px solid var(--rose-light);border-radius:12px;background:transparent;color:var(--text-soft);font-family:var(--font-sans);font-size:.8rem;font-weight:500;cursor:pointer;transition:all .2s;}
+.admin-tab.active{background:var(--rose);color:#fff;border-color:var(--rose);}
+.admin-loading,.admin-empty{text-align:center;padding:20px 16px;color:var(--text-soft);font-size:.82rem;}
+
+/* Mensajes de feedback */
+.fb-card{background:var(--white);border-radius:14px;padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--rose-light);transition:border-color .2s;}
+.fb-card.fb-unread{border-left-color:var(--rose-dark);}
+.fb-card.fb-read{opacity:.7;}
+.fb-hdr{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
+.fb-email{font-size:.78rem;font-weight:600;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.fb-date{font-size:.68rem;color:var(--text-soft);flex-shrink:0;}
+.btn-fb-read{font-size:.68rem;padding:3px 9px;border-radius:8px;border:1px solid var(--rose);color:var(--rose);background:transparent;cursor:pointer;flex-shrink:0;}
+.fb-badge-read{font-size:.68rem;color:var(--text-soft);flex-shrink:0;}
+.fb-msg{font-size:.82rem;color:var(--text);line-height:1.55;white-space:pre-wrap;}
+
+/* Usuarios */
+.user-card{display:flex;align-items:center;gap:10px;background:var(--white);border-radius:14px;padding:10px 12px;margin-bottom:8px;}
+.user-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--rose),var(--lavender));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.92rem;flex-shrink:0;}
+.user-info{flex:1;min-width:0;}
+.user-name{font-size:.82rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-sub{font-size:.68rem;color:var(--text-soft);}
+.role-sel{font-size:.72rem;padding:5px 8px;border:1.5px solid var(--rose-light);border-radius:10px;background:var(--white);color:var(--text);cursor:pointer;max-width:130px;outline:none;}
+.role-sel:disabled{opacity:.5;cursor:not-allowed;}
+
+/* Dark mode admin */
+[data-theme="dark"] .admin-tab{border-color:rgba(204,136,136,.2);color:var(--text-soft);}
+[data-theme="dark"] .admin-tab.active{background:var(--rose);color:#fff;border-color:var(--rose);}
+[data-theme="dark"] .fb-card,[data-theme="dark"] .user-card{background:rgba(15,21,37,.8);border-color:rgba(204,136,136,.1);}
+[data-theme="dark"] .fb-card.fb-unread{border-left-color:var(--rose);}
+[data-theme="dark"] .role-sel{background:rgba(15,21,37,.9);border-color:rgba(204,136,136,.2);}

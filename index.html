@@ -556,6 +556,21 @@ CREATE TRIGGER on_auth_user_created
       </div>
     </div>
 
+    <!-- Panel Admin (solo owner / admin) -->
+    <div class="ss admin-section" id="admin-section" style="display:none">
+      <div class="ss-t">👑 Panel de administración</div>
+      <div class="admin-tabs">
+        <button class="admin-tab active" id="atab-mensajes" onclick="openAdminTab('mensajes')">📬 Mensajes</button>
+        <button class="admin-tab" id="atab-usuarios" onclick="openAdminTab('usuarios')">👥 Usuarios</button>
+      </div>
+      <div id="admin-mensajes">
+        <div id="admin-feedback-list"><div class="admin-loading">Cargando...</div></div>
+      </div>
+      <div id="admin-usuarios" style="display:none">
+        <div id="admin-users-list"><div class="admin-loading">Cargando...</div></div>
+      </div>
+    </div>
+
     <div style="text-align:center;padding:8px 0 4px">
       <div style="font-family:var(--font-serif);font-size:.96rem;color:var(--warm-brown)">🫧 LactaMe v4.1</div>
       <div style="font-family:var(--font-sans);font-size:.64rem;color:var(--text-soft);margin-top:3px">Hecho con amor para mamás en lactancia</div>
