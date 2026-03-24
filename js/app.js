@@ -1157,3 +1157,9 @@ initTheme(); // Aplica tema antes de renderizar
 
 document.getElementById('li-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 document.getElementById('rg-pass2').addEventListener('keydown',e=>{if(e.key==='Enter')doRegister();});
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
