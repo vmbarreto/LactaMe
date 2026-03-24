@@ -25,11 +25,14 @@
 <meta name="twitter:title" content="LactaMe — Tu compañera de lactancia"/>
 <meta name="twitter:description" content="App de registro y apoyo para mamás en lactancia. Gratis, segura y diseñada con amor."/>
 
-<!-- ═══ iOS / Apple PWA ═══ -->
+<!-- ═══ PWA ═══ -->
+<link rel="manifest" href="/manifest.json"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="LactaMe"/>
 <meta name="mobile-web-app-capable" content="yes"/>
+<link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"/>
 
 <!-- ═══ Theme color ═══ -->
 <meta name="theme-color" content="#fdf6ee" media="(prefers-color-scheme: light)"/>
@@ -276,6 +279,11 @@ CREATE TRIGGER on_auth_user_created
         </div>
       </div>
       <button class="btn-primary" onclick="doLogin()">Entrar →</button>
+      <div class="auth-divider"><span>o</span></div>
+      <button class="btn-google" onclick="doGoogleLogin()">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Continuar con Google
+      </button>
     </div>
     <div class="auth-form" id="auth-form-register">
       <div class="auth-err" id="reg-err"></div>
@@ -292,7 +300,13 @@ CREATE TRIGGER on_auth_user_created
           <button class="pw-eye" type="button" onclick="togglePw('rg-pass2',this)">ver</button>
         </div>
       </div>
+      <div class="fg"><label class="flbl">Código de referido <span style="color:var(--text-soft);font-weight:400">(opcional)</span></label><input class="fi" type="text" id="rg-referral" placeholder="Ej: MARIA30" autocomplete="off" style="text-transform:uppercase"/></div>
       <button class="btn-primary" onclick="doRegister()">Crear cuenta →</button>
+      <div class="auth-divider"><span>o</span></div>
+      <button class="btn-google" onclick="doGoogleLogin()">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Registrarse con Google
+      </button>
     </div>
   </div>
 </div>
@@ -476,6 +490,29 @@ CREATE TRIGGER on_auth_user_created
       <div class="plan-badge free" id="perf-plan-badge">🫧 Plan Gratis</div>
     </div>
 
+    <!-- Código de referido (embajadoras/admin/owner) -->
+    <div class="s-section" id="referral-section" style="display:none">
+      <div class="s-section-title">🌟 Tu código de referido</div>
+      <div class="referral-card">
+        <div class="referral-code-wrap">
+          <span class="referral-code-txt" id="referral-code-txt">—</span>
+          <button class="referral-copy-btn" onclick="copyReferral()">Compartir</button>
+        </div>
+        <div class="referral-uses" id="referral-uses">Usados: 0 veces</div>
+        <div class="referral-hint">Quien use tu código obtiene 30 días de prueba gratis</div>
+      </div>
+    </div>
+
+    <!-- Banner trial por vencer -->
+    <div class="trial-banner" id="trial-banner" style="display:none">
+      <span>⏳</span>
+      <div class="trial-banner-txt">
+        <strong id="trial-days-txt">Tu prueba gratis vence pronto</strong>
+        <span>Suscríbete para no perder el acceso</span>
+      </div>
+      <button class="btn-upgrade" onclick="openSubModal()">Ver planes</button>
+    </div>
+
     <!-- Upgrade card (solo visible en plan free) -->
     <div class="upgrade-card" id="upgrade-card">
       <div class="upgrade-card-icon">✨</div>
@@ -562,6 +599,7 @@ CREATE TRIGGER on_auth_user_created
       <div class="admin-tabs">
         <button class="admin-tab active" id="atab-mensajes" onclick="openAdminTab('mensajes')">📬 Mensajes</button>
         <button class="admin-tab" id="atab-usuarios" onclick="openAdminTab('usuarios')">👥 Usuarios</button>
+        <button class="admin-tab" id="atab-referidos" onclick="openAdminTab('referidos')">🔗 Referidos</button>
       </div>
       <div id="admin-mensajes">
         <div id="admin-feedback-list"><div class="admin-loading">Cargando...</div></div>
@@ -569,10 +607,13 @@ CREATE TRIGGER on_auth_user_created
       <div id="admin-usuarios" style="display:none">
         <div id="admin-users-list"><div class="admin-loading">Cargando...</div></div>
       </div>
+      <div id="admin-referidos" style="display:none">
+        <div id="admin-referidos-list"><div class="admin-loading">Cargando...</div></div>
+      </div>
     </div>
 
-    <div style="text-align:center;padding:8px 0 4px">
-      <div style="font-family:var(--font-serif);font-size:.96rem;color:var(--warm-brown)">🫧 LactaMe v4.1</div>
+    <div class="page-footer" style="text-align:center;padding:8px 0 4px">
+      <div style="font-family:var(--font-serif);font-size:.96rem;color:var(--warm-brown)">🫧 LactaMe v5.0</div>
       <div style="font-family:var(--font-sans);font-size:.64rem;color:var(--text-soft);margin-top:3px">Hecho con amor para mamás en lactancia</div>
     </div>
 
@@ -856,6 +897,47 @@ CREATE TRIGGER on_auth_user_created
       <button class="btn-cancel" onclick="closeOv(null,'modal-contact')">Cancelar</button>
       <button class="btn-save" onclick="submitFeedback()">📨 Enviar</button>
     </div>
+  </div>
+</div>
+
+<!-- Modal Planes -->
+<div class="overlay" id="modal-planes" style="display:none" onclick="closeOv(event,'modal-planes')">
+  <div class="modal">
+    <div class="mdrag"></div>
+    <h2 style="text-align:center;margin-bottom:4px">✨ LactaMe+</h2>
+    <p style="text-align:center;font-size:.82rem;color:var(--text-soft);margin-bottom:20px">Desbloquea todas las funciones premium</p>
+
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+      <!-- Plan Mensual -->
+      <div class="plan-card" onclick="suscribirse('mensual')">
+        <div class="plan-card-top">
+          <span class="plan-name">Mensual</span>
+          <span class="plan-price">$2.99 <small>USD/mes</small></span>
+        </div>
+        <p class="plan-desc">Accede a todas las funciones premium. Cancela cuando quieras.</p>
+        <button class="btn-primary" style="margin-top:10px;width:100%">Suscribirme mensual →</button>
+      </div>
+
+      <!-- Plan Anual -->
+      <div class="plan-card plan-card-featured" onclick="suscribirse('anual')">
+        <div class="plan-badge-top">🔥 Más popular · Ahorra 30%</div>
+        <div class="plan-card-top">
+          <span class="plan-name">Anual</span>
+          <span class="plan-price">$24.99 <small>USD/año</small></span>
+        </div>
+        <p class="plan-desc">Todo lo de LactaMe+ a un precio especial. Ahorra un 30% pagando por año.</p>
+        <button class="btn-primary" style="margin-top:10px;width:100%;background:var(--warm-brown)">Suscribirme anual →</button>
+      </div>
+    </div>
+
+    <ul style="font-size:.78rem;color:var(--text-soft);padding-left:18px;line-height:1.9;margin-bottom:16px">
+      <li>Estadísticas avanzadas y gráficas</li>
+      <li>Curvas de crecimiento OMS de tu bebé</li>
+      <li>Acceso completo a la comunidad</li>
+      <li>Exportar tus datos</li>
+      <li>Sin anuncios, siempre</li>
+    </ul>
+    <button class="btn-cancel" style="width:100%" onclick="closePlanes()">Quizás después</button>
   </div>
 </div>
 

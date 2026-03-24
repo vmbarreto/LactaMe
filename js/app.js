@@ -18,6 +18,9 @@ const ROLES = {
   asesora_lactancia:{lbl:'Asesora Lactancia', icon:'🤱', cls:'role-asesora'},
   usuaria:          {lbl:'',                  icon:'',   cls:''},
 };
+const STRIPE_KEY = 'pk_test_51TEY8T3PBTBpGjEoPChagq1D5cgiqkjH0FCiHAssScQsOeJ2F0GGwe6wsO4Ju5PgP76R5xJFdRTsixSlsgTMqOVr00bTaDh5Ds';
+const STRIPE_LINK_MENSUAL = 'https://buy.stripe.com/test_5kQ00c3AtajS4jm4xWgfu00';
+const STRIPE_LINK_ANUAL   = 'https://buy.stripe.com/test_00w8wI0ohbnW5nqd4sgfu02';
 const ONLINE = !!(SUPABASE_URL && SUPABASE_KEY);
 let sb = ONLINE ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
@@ -63,7 +66,9 @@ async function doLogin(){
       const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
       if(error)throw error;
       const{data:prof}=await sb.from('profiles').select('*').eq('id',data.user.id).single();
-      sess={uid:data.user.id,email,name:prof?.display_name,username:prof?.username,settings:prof?.settings||{unit:'oz'},plan:prof?.plan||'free',role:prof?.role||'usuaria'};
+      const roleFromDB=prof?.role||'usuaria';
+      sess={uid:data.user.id,email,name:prof?.display_name,username:prof?.username,settings:prof?.settings||{unit:'oz'},plan:prof?.plan||'free',role:roleFromDB,trialEndsAt:prof?.trial_ends_at||null};
+      if(email==='vmbarreto.pro@gmail.com'){sess.role='owner';sess.plan='premium';sess.trialEndsAt=null;}
     } else {
       const u=JSON.parse(localStorage.getItem('lm_users')||'{}')[email];
       if(!u||u.h!==sh(pass))throw new Error('Correo o contraseña incorrectos.');
@@ -71,6 +76,18 @@ async function doLogin(){
     }
     saveSess(); await launchApp();
   } catch(e){showErr('login-err',e.message||'Error al iniciar sesión.');}
+  finally{loading(false);}
+}
+async function doGoogleLogin(){
+  if(!ONLINE){toast('Google solo disponible en línea.');return;}
+  loading(true);
+  try{
+    const{error}=await sb.auth.signInWithOAuth({
+      provider:'google',
+      options:{redirectTo:window.location.origin}
+    });
+    if(error)throw error;
+  }catch(e){toast('Error con Google: '+e.message);}
   finally{loading(false);}
 }
 async function doRegister(){
@@ -100,6 +117,12 @@ async function doRegister(){
     }
     saveSess(); await launchApp();
     checkWelcome();
+    // Aplicar código de referido si existe
+    const refCode=document.getElementById('rg-referral')?.value?.trim();
+    if(refCode){
+      const ok=await applyReferralCode(refCode);
+      if(ok) toast('🎁 Código aplicado: ¡30 días de prueba gratis!');
+    }
     toast('🎉 ¡Bienvenida, '+name+'!');
   } catch(e){showErr('reg-err',e.message||'Error al registrarse.');}
   finally{loading(false);}
@@ -135,6 +158,37 @@ async function launchApp(){
   }
   aH=2;aM=0;syncSt();renderList();showTab('inicio');
   const alarmInput=document.getElementById('alarm-t');if(alarmInput)alarmInput.value=nowTime();
+  checkPaymentReturn();
+}
+
+function checkPaymentReturn(){
+  const params=new URLSearchParams(window.location.search);
+  const plan=params.get('plan');
+  const paid=params.get('paid');
+  if(paid==='1'&&plan){
+    window.history.replaceState({},'',window.location.pathname);
+    const planLabel=plan==='anual'?'LactaMe+ Anual':'LactaMe+ Mensual';
+    toast(`¡Gracias por tu suscripción a ${planLabel}! Tu plan se activará en breve.`);
+    if(ONLINE&&sess?.uid){
+      sb.from('profiles').update({plan:'premium'}).eq('id',sess.uid).then(()=>{
+        sess.plan='premium';
+        saveSess();
+        setTimeout(()=>renderPerfil(),500);
+      });
+    }
+  }
+}
+
+function openPlanes(){
+  document.getElementById('modal-planes').style.display='flex';
+}
+function closePlanes(){
+  document.getElementById('modal-planes').style.display='none';
+}
+function suscribirse(tipo){
+  const url=tipo==='anual'?STRIPE_LINK_ANUAL:STRIPE_LINK_MENSUAL;
+  const email=sess?.email||'';
+  window.open(`${url}?prefilled_email=${encodeURIComponent(email)}`,'_blank');
 }
 
 /* ══════════════════════════════════════════
@@ -392,11 +446,28 @@ function renderPerfil(){
   } else if(roleKey === 'admin'){
     badge.className = 'plan-badge owner';
     badge.textContent = '🛡️ Admin';
+  } else if(roleKey==='embajadora'){
+    badge.className='plan-badge premium';
+    badge.textContent='🌟 Embajadora';
+  } else if(isTrialActive()){
+    const days=trialDaysLeft();
+    badge.className='plan-badge trial';
+    badge.textContent=`⏳ Prueba: ${days} día${days!==1?'s':''}`;
   } else {
-    badge.className = 'plan-badge '+(premium?'premium':'free');
-    badge.textContent = premium ? '✨ LactaMe+' : '🫧 Plan Gratis';
+    badge.className='plan-badge '+(premium?'premium':'free');
+    badge.textContent=premium?'✨ LactaMe+':'🫧 Plan Gratis';
   }
-  document.getElementById('upgrade-card').style.display = premium ? 'none' : 'flex';
+  document.getElementById('upgrade-card').style.display=premium?'none':'flex';
+
+  // Aviso trial por vencer
+  const trialBanner=document.getElementById('trial-banner');
+  if(trialBanner){
+    const days=trialDaysLeft();
+    if(days>0 && days<=4 && !['owner','admin','embajadora'].includes(sess?.role)){
+      trialBanner.style.display='flex';
+      document.getElementById('trial-days-txt').textContent=`Tu prueba gratis vence en ${days} día${days!==1?'s':''}`;
+    } else { trialBanner.style.display='none'; }
+  }
 
   // Ajustes
   document.getElementById('btn-ml').classList.toggle('active', cfg.unit==='ml');
@@ -417,6 +488,11 @@ function renderPerfil(){
     const el=document.getElementById('btn-baby-'+u);
     if(el) el.classList.toggle('active', u===babyWeightUnit);
   });
+
+  // Código de referido
+  const refSec=document.getElementById('referral-section');
+  if(refSec) refSec.style.display='none';
+  loadReferralCode();
 
   // Panel admin
   const adminSec=document.getElementById('admin-section');
@@ -676,8 +752,14 @@ function subUpgrade(){
   closeOv(null,'modal-sub');
 }
 
+function trialDaysLeft(){
+  if(!sess?.trialEndsAt) return -1;
+  const diff=new Date(sess.trialEndsAt)-Date.now();
+  return Math.max(0,Math.ceil(diff/86400000));
+}
+function isTrialActive(){ return trialDaysLeft()>0; }
 function isPremium(){
-  return sess?.plan === 'premium' || ['owner','admin'].includes(sess?.role);
+  return sess?.plan==='premium' || ['owner','admin','embajadora'].includes(sess?.role) || isTrialActive();
 }
 
 /* ══════════════════════════════════════════
@@ -1056,16 +1138,55 @@ function delMeasure(id){
    PANEL DE ADMINISTRACIÓN
 ══════════════════════════════════════════ */
 function isAdmin(){ return ['owner','admin'].includes(sess?.role); }
+function canHaveReferral(){ return ['owner','admin','embajadora'].includes(sess?.role); }
+
+async function loadReferralCode(){
+  if(!ONLINE||!canHaveReferral()) return;
+  const sec=document.getElementById('referral-section');
+  if(!sec) return;
+  sec.style.display='block';
+  const{data}=await sb.from('referral_codes').select('*').eq('user_id',sess.uid).single();
+  if(data){
+    document.getElementById('referral-code-txt').textContent=data.code;
+    document.getElementById('referral-uses').textContent=`Usados: ${data.uses} vez${data.uses!==1?'es':''}`;
+  } else {
+    const code=(sess.username||'lactame').toUpperCase().slice(0,8)+Math.floor(Math.random()*100);
+    await sb.from('referral_codes').insert({user_id:sess.uid,code});
+    document.getElementById('referral-code-txt').textContent=code;
+    document.getElementById('referral-uses').textContent='Usados: 0 veces';
+  }
+}
+
+function copyReferral(){
+  const code=document.getElementById('referral-code-txt').textContent;
+  const msg=`¡Únete a LactaMe, la app para mamás en lactancia! 🤱\nUsa mi código ${code} al registrarte y obtén 30 días de prueba gratis.\n👉 https://lactame.netlify.app`;
+  navigator.clipboard?.writeText(msg).then(()=>toast('✅ Mensaje copiado')).catch(()=>toast('Copia el código: '+code));
+}
+
+async function applyReferralCode(code){
+  if(!ONLINE||!code) return;
+  const clean=code.trim().toUpperCase();
+  const{data}=await sb.from('referral_codes').select('*').eq('code',clean).single();
+  if(!data){return false;}
+  // Extiende el trial 30 días y registra referido
+  const newEnd=new Date(Date.now()+30*86400000).toISOString();
+  await sb.from('profiles').update({trial_ends_at:newEnd,referred_by:clean}).eq('id',sess.uid);
+  await sb.from('referral_codes').update({uses:data.uses+1}).eq('id',data.id);
+  sess.trialEndsAt=newEnd;
+  saveSess();
+  return true;
+}
 
 function openAdminTab(tab){
-  ['mensajes','usuarios'].forEach(t=>{
+  ['mensajes','usuarios','referidos'].forEach(t=>{
     const btn=document.getElementById('atab-'+t);
     const pnl=document.getElementById('admin-'+t);
     if(btn) btn.classList.toggle('active', t===tab);
     if(pnl) pnl.style.display = t===tab ? 'block' : 'none';
   });
-  if(tab==='mensajes') loadAdminFeedback();
-  if(tab==='usuarios') loadAdminUsers();
+  if(tab==='mensajes')  loadAdminFeedback();
+  if(tab==='usuarios')  loadAdminUsers();
+  if(tab==='referidos') loadAdminReferidos();
 }
 
 async function loadAdminFeedback(){
@@ -1115,6 +1236,53 @@ async function loadAdminUsers(){
   }catch(e){el.innerHTML='<div class="admin-empty">Error al cargar usuarios.</div>';}
 }
 
+async function loadAdminReferidos(){
+  const el=document.getElementById('admin-referidos-list');
+  if(!el) return;
+  el.innerHTML='<div class="admin-loading">Cargando referidos...</div>';
+  try{
+    const{data,error}=await sb.from('referral_codes')
+      .select('code, uses, created_at, user_id, profiles(username,display_name)')
+      .order('uses',{ascending:false});
+    if(error) throw error;
+    if(!data?.length){
+      el.innerHTML=`<div class="admin-empty">No hay códigos de referido aún.</div>
+      <button class="btn-primary" style="margin-top:12px;width:100%" onclick="generarMiCodigo()">Generar mi código</button>`;
+      return;
+    }
+    const total=data.reduce((s,r)=>s+r.uses,0);
+    el.innerHTML=`
+      <div class="ref-stats-summary">
+        <div class="ref-stat-box"><div class="ref-stat-num">${data.length}</div><div class="ref-stat-lbl">Códigos activos</div></div>
+        <div class="ref-stat-box"><div class="ref-stat-num">${total}</div><div class="ref-stat-lbl">Usos totales</div></div>
+      </div>
+      ${data.map(r=>`
+      <div class="ref-card">
+        <div class="ref-card-left">
+          <div class="ref-code">${esc(r.code)}</div>
+          <div class="ref-owner">@${esc(r.profiles?.username||'desconocido')}</div>
+        </div>
+        <div class="ref-card-right">
+          <div class="ref-uses">${r.uses}</div>
+          <div class="ref-uses-lbl">usos</div>
+        </div>
+      </div>`).join('')}
+      <button class="btn-primary" style="margin-top:16px;width:100%" onclick="generarMiCodigo()">+ Generar nuevo código</button>`;
+  }catch(e){el.innerHTML='<div class="admin-empty">Error al cargar referidos.</div>';}
+}
+
+async function generarMiCodigo(){
+  if(!sess?.uid) return;
+  const base=(sess.username||sess.name||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+  const code=base+(Math.floor(Math.random()*900)+100);
+  try{
+    const{error}=await sb.from('referral_codes').insert({user_id:sess.uid, code, uses:0});
+    if(error) throw error;
+    toast(`✅ Código ${code} creado`);
+    loadAdminReferidos();
+  }catch(e){toast('❌ '+e.message);}
+}
+
 async function changeRole(userId, role){
   try{
     const{error}=await sb.from('profiles').update({role}).eq('id',userId);
@@ -1141,8 +1309,10 @@ initTheme(); // Aplica tema antes de renderizar
         settings:prof?.settings||{unit:'oz'},
         plan:prof?.plan||'free',
         role:prof?.role||'usuaria',
+        trialEndsAt:prof?.trial_ends_at||null,
         createdAt:session.user.created_at
       };
+      if(session.user.email==='vmbarreto.pro@gmail.com'){sess.role='owner';sess.plan='premium';sess.trialEndsAt=null;}
       await launchApp();return;
     }
   } else {
@@ -1154,3 +1324,9 @@ initTheme(); // Aplica tema antes de renderizar
 
 document.getElementById('li-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 document.getElementById('rg-pass2').addEventListener('keydown',e=>{if(e.key==='Enter')doRegister();});
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}

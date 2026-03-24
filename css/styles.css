@@ -3,6 +3,8 @@
   --warm-brown:#8b5e52;--sage:#a8b89a;--sage-light:#dce8d5;
   --text:#3d2b24;--text-soft:#7a5c52;--white:#fffaf6;
   --nav-h:74px;
+  --sat:env(safe-area-inset-top,0px);
+  --sab:env(safe-area-inset-bottom,0px);
   --font-serif:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif;
   --font-sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;
   --lavender:#c9b8e8;--lavender-light:#ede7f6;--lavender-dark:#8b6aaa;
@@ -60,7 +62,8 @@
 [data-theme="dark"] .unit-tog{background:rgba(20,28,50,.6);}
 
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;}
+html{background:var(--cream);height:100%;}
+body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-height:100vh;min-height:100dvh;overflow-x:hidden;transition:background .3s,color .3s;-webkit-text-size-adjust:100%;}
 
 /* ══ ANIMACIONES GLOBALES DE BOTONES ══ */
 button,
@@ -137,7 +140,8 @@ button:active,
 [data-theme="dark"] .land-feat{background:rgba(36,27,22,.7);border-color:rgba(201,122,110,.2);}
 
 /* ══ AUTH ══ */
-.auth-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden;}
+.auth-screen{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(24px + var(--sat)) 24px calc(24px + var(--sab));position:relative;overflow:hidden;}
+#landing-screen{padding-top:var(--sat);}
 .auth-back{position:absolute;top:18px;left:18px;background:rgba(255,255,255,.55);border:none;border-radius:50%;width:38px;height:38px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.88rem;color:var(--warm-brown);backdrop-filter:blur(6px);font-family:var(--font-sans);font-weight:600;}
 .auth-logo{text-align:center;margin-bottom:22px;}
 .auth-logo h1{font-family:var(--font-serif);font-size:2rem;color:var(--warm-brown);font-weight:600;margin-top:6px;}
@@ -169,8 +173,8 @@ button:active,
 /* ══ APP SHELL ══ */
 .app-shell{display:none;position:relative;z-index:1;}
 
-/* HEADER */
-.header{padding:12px 16px 10px;display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:8px;position:sticky;top:0;z-index:50;background:rgba(253,246,238,.84);backdrop-filter:blur(16px);}
+/* HEADER — cubre zona de status bar en iPhone */
+.header{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:8px;position:sticky;top:0;z-index:50;background:rgba(253,246,238,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:calc(12px + var(--sat)) 16px 10px;margin-top:calc(-1 * var(--sat));}
 .header-center{text-align:center;}
 .header-logo{display:flex;align-items:center;justify-content:center;gap:8px;}
 .hlogo-drop{width:44px;height:44px;}
@@ -185,7 +189,7 @@ button:active,
 .hbtn-comm.active{background:rgba(168,184,154,.5);color:#4a6340;}
 
 /* BOTTOM NAV — 3 tabs */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:rgba(253,246,238,.92);backdrop-filter:blur(20px);display:flex;align-items:flex-end;justify-content:space-around;z-index:50;padding:0 2px calc(12px + env(safe-area-inset-bottom,0));border-radius:28px 28px 0 0;box-shadow:0 -4px 24px rgba(139,94,82,.1);}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav-h) + var(--sab));background:rgba(253,246,238,.92);backdrop-filter:blur(20px);display:flex;align-items:flex-end;justify-content:space-around;z-index:50;padding:0 2px calc(14px + var(--sab));border-radius:28px 28px 0 0;box-shadow:0 -4px 24px rgba(139,94,82,.1);}
 .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;cursor:pointer;padding:0 1px;border:none;background:transparent;color:var(--text-soft);transition:color .2s;}
 .nav-pip{display:flex;align-items:center;justify-content:center;width:46px;height:38px;border-radius:20px;transition:background .25s,transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s;}
 .nav-btn.active .nav-pip{background:linear-gradient(135deg,rgba(245,213,207,.9),rgba(220,232,213,.7));transform:translateY(-14px) scale(1.15);box-shadow:0 10px 24px rgba(201,122,110,.22);}
@@ -199,12 +203,12 @@ button:active,
 .nav-btn.active .nav-lbl{opacity:0;transform:translateY(4px);}
 
 /* FAB */
-.fab{position:fixed;bottom:calc(var(--nav-h)+12px);right:50%;transform:translateX(50%);background:linear-gradient(135deg,var(--rose-dark),var(--warm-brown));color:#fff;border:none;border-radius:50px;padding:13px 26px;font-family:var(--font-sans);font-size:.87rem;font-weight:600;cursor:pointer;box-shadow:0 6px 24px rgba(201,122,110,.42);display:flex;align-items:center;gap:8px;transition:transform .15s,box-shadow .15s;z-index:15;}
+.fab{position:fixed;bottom:calc(var(--nav-h) + var(--sab) + 12px);right:50%;transform:translateX(50%);background:linear-gradient(135deg,var(--rose-dark),var(--warm-brown));color:#fff;border:none;border-radius:50px;padding:13px 26px;font-family:var(--font-sans);font-size:.87rem;font-weight:600;cursor:pointer;box-shadow:0 6px 24px rgba(201,122,110,.42);display:flex;align-items:center;gap:8px;transition:transform .15s,box-shadow .15s;z-index:15;}
 .fab:hover{transform:translateX(50%) translateY(-2px);}
 .fab-comm{background:linear-gradient(135deg,#b89dc8,#8b6a9a);box-shadow:0 6px 24px rgba(139,106,154,.38);}
 
 /* CONTENT */
-.content{padding:18px 16px calc(var(--nav-h)+80px);max-width:480px;margin:0 auto;position:relative;z-index:1;}
+.content{padding:18px 16px calc(var(--nav-h) + var(--sab) + 40px);max-width:480px;margin:0 auto;position:relative;z-index:1;width:100%;}
 
 /* STAT CARDS */
 .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;}
@@ -511,6 +515,19 @@ button:active,
 .perf-email{font-family:var(--font-sans);font-size:.74rem;color:var(--text-soft);margin-top:3px;}
 .perf-since{font-family:var(--font-sans);font-size:.66rem;color:var(--text-soft);margin-top:2px;font-weight:300;}
 
+/* ══ PLANES MODAL ══ */
+.plan-card{background:var(--white);border:1.5px solid var(--rose-light);border-radius:16px;padding:16px;cursor:pointer;transition:transform .18s,box-shadow .18s;position:relative;}
+.plan-card:active{transform:scale(.98);}
+.plan-card-featured{border-color:var(--warm-brown);box-shadow:0 4px 20px rgba(140,90,70,.15);}
+.plan-card-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.plan-name{font-weight:700;font-size:1rem;color:var(--text);}
+.plan-price{font-weight:800;font-size:1.1rem;color:var(--warm-brown);}
+.plan-price small{font-size:.72rem;font-weight:500;color:var(--text-soft);}
+.plan-desc{font-size:.78rem;color:var(--text-soft);line-height:1.5;}
+.plan-badge-top{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--warm-brown);color:#fff;font-size:.68rem;font-weight:700;padding:3px 14px;border-radius:50px;white-space:nowrap;}
+[data-theme="dark"] .plan-card{border-color:rgba(255,255,255,.08);}
+[data-theme="dark"] .plan-card-featured{border-color:var(--warm-brown);}
+
 /* Plan badge */
 .plan-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:50px;font-family:var(--font-sans);font-size:.72rem;font-weight:600;margin-top:10px;}
 .plan-badge.free{background:rgba(245,213,207,.6);color:var(--warm-brown);}
@@ -810,6 +827,76 @@ button:active,
 /* Dark mode admin */
 [data-theme="dark"] .admin-tab{border-color:rgba(204,136,136,.2);color:var(--text-soft);}
 [data-theme="dark"] .admin-tab.active{background:var(--rose);color:#fff;border-color:var(--rose);}
-[data-theme="dark"] .fb-card,[data-theme="dark"] .user-card{background:rgba(15,21,37,.8);border-color:rgba(204,136,136,.1);}
+[data-theme="dark"] .fb-card,[data-theme="dark"] .user-card,[data-theme="dark"] .ref-card{background:rgba(15,21,37,.8);border-color:rgba(204,136,136,.1);}
 [data-theme="dark"] .fb-card.fb-unread{border-left-color:var(--rose);}
 [data-theme="dark"] .role-sel{background:rgba(15,21,37,.9);border-color:rgba(204,136,136,.2);}
+
+/* ══ REFERIDOS ADMIN ══ */
+.ref-stats-summary{display:flex;gap:10px;margin-bottom:14px;}
+.ref-stat-box{flex:1;background:var(--white);border:1.5px solid var(--rose-light);border-radius:14px;padding:14px;text-align:center;}
+.ref-stat-num{font-size:1.6rem;font-weight:800;color:var(--warm-brown);}
+.ref-stat-lbl{font-size:.72rem;color:var(--text-soft);margin-top:2px;}
+.ref-card{display:flex;justify-content:space-between;align-items:center;background:var(--white);border:1.5px solid var(--rose-light);border-radius:14px;padding:12px 16px;margin-bottom:10px;}
+.ref-code{font-weight:700;font-size:.95rem;color:var(--text);letter-spacing:.5px;}
+.ref-owner{font-size:.72rem;color:var(--text-soft);margin-top:2px;}
+.ref-card-right{text-align:center;}
+.ref-uses{font-size:1.4rem;font-weight:800;color:var(--warm-brown);}
+.ref-uses-lbl{font-size:.65rem;color:var(--text-soft);}
+[data-theme="dark"] .ref-stat-box{background:rgba(15,21,37,.8);border-color:rgba(204,136,136,.1);}
+[data-theme="dark"] .ref-card{background:rgba(15,21,37,.8);border-color:rgba(204,136,136,.1);}
+
+/* ══ RESPONSIVE — iPhone SE y pantallas pequeñas ══ */
+/* ══ RESPONSIVE IPHONE ══ */
+
+/* iPhone SE y pantallas pequeñas (≤375px) */
+@media (max-width: 375px){
+  .header-logo h1{font-size:1.2rem;}
+  .content{padding-left:12px;padding-right:12px;}
+  .stat-card,.ext-card,.s-card{padding:14px 12px;}
+  .home-col{padding:14px 12px;}
+  .hbtn{width:34px;height:34px;}
+  .nav-lbl{font-size:.5rem;}
+  .btn-primary,.btn-cancel,.btn-save{font-size:.84rem;padding:14px 18px;}
+  .modal{padding:20px 16px;}
+}
+
+/* iPhone estándar (376px–430px) */
+@media (min-width:376px) and (max-width:430px){
+  .content{padding-left:16px;padding-right:16px;}
+}
+
+/* Evitar zoom en inputs en iOS */
+input,select,textarea{font-size:16px !important;}
+.flbl{font-size:.8rem !important;}
+
+/* Área segura inferior — versión siempre visible */
+.page-footer{padding-bottom:calc(8px + var(--sab));}
+
+/* ══ DARK MODE bottom-nav ══ */
+[data-theme="dark"] .bottom-nav{background:rgba(10,14,26,.93);}
+
+/* ══ GOOGLE BUTTON ══ */
+.btn-google{width:100%;padding:13px;border:1.5px solid rgba(139,94,82,.2);border-radius:16px;background:#fff;color:#3d2b24;font-family:var(--font-sans);font-size:.9rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .2s,box-shadow .2s;}
+.btn-google:hover{background:#fafafa;box-shadow:0 2px 12px rgba(0,0,0,.08);}
+[data-theme="dark"] .btn-google{background:rgba(20,28,50,.8);border-color:rgba(204,136,136,.2);color:var(--text);}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:12px 0;color:var(--text-soft);font-size:.75rem;}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(139,94,82,.15);}
+
+/* ══ TRIAL ══ */
+.plan-badge.trial{background:linear-gradient(135deg,#f5a623,#e8833a);color:#fff;}
+.trial-banner{background:linear-gradient(135deg,#fff8e8,#fff3d4);border:1.5px solid #f5a623;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.trial-banner-txt{flex:1;display:flex;flex-direction:column;gap:2px;}
+.trial-banner-txt strong{font-size:.85rem;color:#8a6500;}
+.trial-banner-txt span{font-size:.72rem;color:#b38a30;}
+[data-theme="dark"] .trial-banner{background:rgba(32,24,8,.9);border-color:#c8960a;}
+[data-theme="dark"] .trial-banner-txt strong{color:#e8c840;}
+[data-theme="dark"] .trial-banner-txt span{color:#b09020;}
+
+/* ══ REFERRAL ══ */
+.referral-card{background:linear-gradient(135deg,var(--rose-light),var(--sage-light));border-radius:18px;padding:16px;border:1.5px solid rgba(232,165,152,.3);}
+.referral-code-wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;}
+.referral-code-txt{font-family:var(--font-serif);font-size:1.4rem;font-weight:700;color:var(--warm-brown);letter-spacing:.08em;}
+.referral-copy-btn{background:var(--rose-dark);color:#fff;border:none;border-radius:12px;padding:8px 16px;font-size:.8rem;font-weight:600;cursor:pointer;}
+.referral-uses{font-size:.75rem;color:var(--text-soft);margin-bottom:4px;}
+.referral-hint{font-size:.72rem;color:var(--text-soft);font-style:italic;}
+[data-theme="dark"] .referral-card{background:rgba(15,21,37,.8);border-color:rgba(204,136,136,.2);}
