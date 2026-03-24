@@ -49,7 +49,7 @@
 }
 </script>
 
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<!-- SF Pro / Apple system fonts loaded automatically on Apple devices -->
 
 <!--
 ╔══════════════════════════════════════════════════════════════╗
@@ -177,7 +177,7 @@ CREATE TRIGGER on_auth_user_created
 </head>
 <body>
 
-<div class="wc-bg"><span class="wc1"></span><span class="wc2"></span><span class="wc3"></span><span class="wc4"></span><span class="wc5"></span></div>
+<div class="wc-bg" id="wc-bg"><span class="wc1"></span><span class="wc2"></span><span class="wc3"></span><span class="wc4"></span><span class="wc5"></span><div class="stars-layer" id="stars-layer"></div></div>
 
 <!-- Loading -->
 <div class="loading-overlay" id="loading-overlay">
@@ -300,12 +300,14 @@ CREATE TRIGGER on_auth_user_created
 <!-- ══ APP SHELL ══ -->
 <div class="app-shell" id="app-shell">
   <div class="header">
-    <button class="hbtn" onclick="showTab('perfil')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#8b5e52" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-      </svg>
-    </button>
+    <div class="header-left">
+      <button class="hbtn" onclick="showTab('perfil')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
     <div class="header-center">
       <div class="header-logo">
         <svg class="hlogo-drop" viewBox="0 0 200 200" fill="none">
@@ -316,7 +318,6 @@ CREATE TRIGGER on_auth_user_created
         </svg>
         <h1>LactaMe</h1>
       </div>
-      <div class="header-user">Hola, <strong id="hdr-name">—</strong> 👋</div>
     </div>
     <div class="header-right">
       <button class="hbtn hbtn-comm" id="hbtn-comm" onclick="showTab('comunidad')">
@@ -332,112 +333,125 @@ CREATE TRIGGER on_auth_user_created
 
   <!-- Pages -->
 
-  <!-- ══ INICIO ══ -->
+  <!-- ══ INICIO (unificado) ══ -->
   <div class="content" id="page-inicio" style="display:none">
 
-    <!-- Saludo -->
-    <div class="greeting-card">
-      <div class="greeting-time" id="greeting-time">Buenos días</div>
-      <div class="greeting-name" id="greeting-name">—</div>
-      <div class="greeting-sub" id="greeting-sub">¿Lista para registrar tu extracción de hoy?</div>
+    <!-- Columnas: Stats | Bebé mini -->
+    <div class="home-columns">
+
+      <!-- Columna izquierda: stats del día + racha + mini gráfica semanal → va a Estadísticas -->
+      <div class="home-col home-col-left" onclick="showTab('estadisticas')" style="cursor:pointer">
+        <div class="hcol-label">Hoy</div>
+        <div class="hcol-big-val" id="h-today">0 oz</div>
+        <div class="hcol-small" id="h-sessions">0 sesiones</div>
+        <div class="streak-mini" id="streak-mini-card">
+          <span class="streak-mini-fire">🔥</span>
+          <span class="streak-mini-num" id="streak-count">0</span>
+          <span class="streak-mini-lbl" id="streak-lbl"> días</span>
+        </div>
+        <div class="mini-chart">
+          <div class="mini-bars" id="mini-bars"></div>
+          <div class="mini-days" id="mini-days"></div>
+        </div>
+      </div>
+
+      <!-- Columna derecha: bebé mini -->
+      <div class="home-col home-col-right home-bebe-mini" onclick="showTab('bebe')">
+        <div class="hcol-label">Bebé</div>
+        <div id="home-bebe-col"></div>
+      </div>
+
     </div>
 
-    <!-- Racha -->
-    <div class="streak-card" id="streak-card">
-      <div class="streak-fire">🔥</div>
-      <div class="streak-info">
-        <div class="streak-num" id="streak-count">0</div>
-        <div class="streak-lbl" id="streak-lbl">días seguidos · ¡empieza hoy!</div>
-      </div>
+    <!-- Alarma → redirige a Estadísticas y abre el panel -->
+    <div class="alarm-home-card" id="alarm-home-card" onclick="goToAlarm()">
+      <div class="alarm-home-lbl">⏰ Alarma</div>
+      <div id="alarm-col-status"></div>
     </div>
 
-    <!-- Stats de hoy -->
-    <div class="home-stats">
-      <div class="home-stat">
-        <div class="hval" id="h-today">0</div>
-        <div class="hlbl">Hoy extraído</div>
-      </div>
-      <div class="home-stat">
-        <div class="hval" id="h-sessions">0</div>
-        <div class="hlbl">Sesiones hoy</div>
-      </div>
-    </div>
-
-    <!-- Alarma activa -->
-    <div class="home-alarm" id="home-alarm-card" style="display:none">
-      <div class="home-alarm-dot"></div>
-      <div class="home-alarm-info">
-        <div class="home-alarm-lbl">Próxima extracción</div>
-        <div class="home-alarm-time" id="h-alarm-time">—</div>
-        <div class="home-alarm-cd" id="h-alarm-cd"></div>
-      </div>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--rose-dark)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg>
-    </div>
-
-    <!-- Botón rápido -->
+    <!-- Botón nueva extracción -->
     <button class="home-add" onclick="openExtModal(null)">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Nueva extracción
     </button>
 
-    <!-- Últimas extracciones -->
-    <div class="home-section-title">Últimas extracciones</div>
-    <div class="home-recent" id="home-recent"></div>
-
   </div>
 
+  <!-- ══ ESTADÍSTICAS ══ -->
   <div class="content" id="page-estadisticas" style="display:none">
-    <div class="week-chart"><h3 id="wct">📈 Últimos 7 días</h3><div class="bar-row" id="week-bars"></div><div style="display:flex;gap:6px" id="week-lbls"></div></div>
-    <div class="stats-row">
-      <div class="stat-card"><div class="val" id="s-avg">0</div><div class="lbl">Promedio</div></div>
-      <div class="stat-card"><div class="val" id="s-frz">0</div><div class="lbl">Congeladas</div></div>
-    </div>
-    <div class="stats-row">
-      <div class="stat-card"><div class="val" id="s-wtot">0</div><div class="lbl">Esta semana</div></div>
-      <div class="stat-card"><div class="val" id="s-rfr">0</div><div class="lbl">Refrigeradas</div></div>
-    </div>
-  </div>
 
-  <div class="content" id="page-registro">
+    <!-- Alarma detallada -->
+    <div class="stats-alarm-section">
+      <div class="home-section-title">⏰ Recordatorio de extracción</div>
+      <div class="stats-alarm-card" id="stats-alarm-card">
+        <!-- Renderizado por renderStatsAlarm() -->
+        <div class="stats-alarm-off">
+          <div class="sa-icon">⏰</div>
+          <div class="sa-info">
+            <div class="sa-title">Sin recordatorio activo</div>
+            <div class="sa-sub">Configura tu alarma desde la pantalla principal</div>
+          </div>
+        </div>
+      </div>
+      <!-- Panel de config alarma en stats -->
+      <div class="alarm-config-panel" id="alarm-config-panel-stats" style="display:none">
+        <h3>⏰ Configurar alarma</h3>
+        <div style="font-size:.62rem;color:var(--text-soft);font-family:var(--font-sans);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">Atajos rápidos</div>
+        <div class="presets-row" id="presets-row-stats">
+          <div class="pchip" onclick="applyPreset(0,30)">30 min</div>
+          <div class="pchip" onclick="applyPreset(1,0)">1h</div>
+          <div class="pchip" onclick="applyPreset(1,30)">1h 30m</div>
+          <div class="pchip active" onclick="applyPreset(2,0)">2h</div>
+          <div class="pchip" onclick="applyPreset(3,0)">3h</div>
+          <div class="pchip" onclick="applyPreset(4,0)">4h</div>
+          <div class="pchip" onclick="applyPreset(6,0)">6h</div>
+          <div class="pchip" onclick="applyPreset(8,0)">8h</div>
+        </div>
+        <div style="font-size:.62rem;color:var(--text-soft);font-family:var(--font-sans);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">Personalizado</div>
+        <div class="sg">
+          <div><div class="slbl">Horas</div><div class="stepper"><button class="stbtn" onclick="adjI('h',-1)">−</button><div class="stval"><div class="sv-n" id="iv-h-stats">2</div><div class="sv-u">horas</div></div><button class="stbtn" onclick="adjI('h',1)">+</button></div></div>
+          <div><div class="slbl">Minutos</div><div class="stepper"><button class="stbtn" onclick="adjI('m',-15)">−</button><div class="stval"><div class="sv-n" id="iv-m-stats">00</div><div class="sv-u">min</div></div><button class="stbtn" onclick="adjI('m',15)">+</button></div></div>
+        </div>
+        <div class="fg"><label class="flbl">Hora de inicio (opcional)</label><input type="time" class="fi" id="alarm-t-stats"/></div>
+        <button class="btn-save" style="width:100%;border-radius:50px;padding:13px" onclick="activateAlarmStats()">🔔 Activar recordatorio</button>
+      </div>
+    </div>
+
+    <!-- Banner modo offline -->
     <div class="setup-banner" id="setup-banner">
       <div class="setup-banner-title">⚡ Modo sin conexión</div>
       <p>Los datos solo se guardan en este dispositivo. Agrega tus claves de Supabase para guardar en la nube.</p>
     </div>
+
+    <!-- Resumen numérico -->
     <div class="stats-row">
       <div class="stat-card"><div class="val" id="s-today">0</div><div class="lbl">Hoy extraído</div></div>
-      <div class="stat-card"><div class="val" id="s-total">0</div><div class="lbl">Extracciones totales</div></div>
+      <div class="stat-card"><div class="val" id="s-total">0</div><div class="lbl">Total sesiones</div></div>
     </div>
-    <div id="ext-list"></div>
-  </div>
 
-  <div class="content" id="page-alarma" style="display:none">
-    <div class="alarm-hero"><div class="alarm-hero-icon">⏰</div><div class="alarm-hero-title">Recordatorio de extracción</div><div class="alarm-hero-sub">Configura el intervalo que mejor se adapte a tu rutina</div></div>
-    <div class="alarm-card">
-      <h3>¿Cada cuánto quieres tu alarma?</h3>
-      <div style="font-size:.67rem;color:var(--text-soft);font-family:var(--font-sans);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">Atajos rápidos</div>
-      <div class="presets-row" id="presets-row">
-        <div class="pchip" data-h="0" data-m="30" onclick="applyPreset(0,30)">30 min</div>
-        <div class="pchip" data-h="1" data-m="0" onclick="applyPreset(1,0)">1h</div>
-        <div class="pchip" data-h="1" data-m="30" onclick="applyPreset(1,30)">1h 30m</div>
-        <div class="pchip active" data-h="2" data-m="0" onclick="applyPreset(2,0)">2h</div>
-        <div class="pchip" data-h="3" data-m="0" onclick="applyPreset(3,0)">3h</div>
-        <div class="pchip" data-h="4" data-m="0" onclick="applyPreset(4,0)">4h</div>
-        <div class="pchip" data-h="6" data-m="0" onclick="applyPreset(6,0)">6h</div>
-        <div class="pchip" data-h="8" data-m="0" onclick="applyPreset(8,0)">8h</div>
-      </div>
-      <div style="font-size:.67rem;color:var(--text-soft);font-family:var(--font-sans);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">Personalizado</div>
-      <div class="sg">
-        <div><div class="slbl">Horas</div><div class="stepper"><button class="stbtn" onclick="adjI('h',-1)">−</button><div class="stval"><div class="sv-n" id="iv-h">2</div><div class="sv-u">horas</div></div><button class="stbtn" onclick="adjI('h',1)">+</button></div></div>
-        <div><div class="slbl">Minutos</div><div class="stepper"><button class="stbtn" onclick="adjI('m',-15)">−</button><div class="stval"><div class="sv-n" id="iv-m">00</div><div class="sv-u">minutos</div></div><button class="stbtn" onclick="adjI('m',15)">+</button></div></div>
-      </div>
-      <div class="fg"><label class="flbl">Hora de inicio (opcional)</label><input type="time" class="fi" id="alarm-t"/></div>
-      <button class="btn-save" style="width:100%;border-radius:50px;padding:13px" onclick="activateAlarm()">🔔 Activar recordatorio</button>
-    </div>
-    <div id="alarm-status"></div>
+    <!-- Botón nueva extracción -->
+    <button class="home-add" onclick="openExtModal(null)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nueva extracción
+    </button>
+
+    <!-- Historial de extracciones -->
+    <div class="home-section-title">Historial</div>
+    <div id="ext-list"></div>
+
   </div>
 
   <div class="content" id="page-comunidad" style="display:none">
     <div class="comm-banner"><div class="comm-banner-title">💜 Comunidad de madres — no es consejo médico</div><p>Espacio de apoyo entre mamás. Las publicaciones <strong>no reemplazan orientación médica</strong> ni de un especialista en lactancia.</p></div>
+    <!-- Banner premium (visible solo para usuarios free) -->
+    <div class="comm-premium-banner" id="comm-premium-banner">
+      <div class="cpb-icon">✨</div>
+      <div class="cpb-info">
+        <div class="cpb-title">Publica con LactaMe+</div>
+        <div class="cpb-sub">Con el plan gratuito puedes leer todos los mensajes. Únete a LactaMe+ para compartir tu historia.</div>
+      </div>
+      <button class="cpb-btn" onclick="openSubModal()">Ver planes</button>
+    </div>
     <div style="font-size:.68rem;font-weight:600;font-family:var(--font-sans);color:var(--text-soft);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">Grupos</div>
     <div class="gscroll" id="gscroll">
       <div class="gchip active" data-g="all" onclick="filterGrp('all')">✨ Todos</div>
@@ -490,6 +504,19 @@ CREATE TRIGGER on_auth_user_created
       </div>
     </div>
 
+    <!-- Unidades bebé -->
+    <div class="ss"><div class="ss-t">Unidades de peso (bebé)</div>
+      <div class="s-card">
+        <div class="s-row"><div><div class="sr-lbl">Unidad de peso del bebé</div><div class="sr-sub">Se aplica al registro de crecimiento</div></div>
+          <div class="unit-tog">
+            <button class="unit-btn" id="btn-baby-kg" onclick="selBabyUnit('kg')">kg</button>
+            <button class="unit-btn" id="btn-baby-g" onclick="selBabyUnit('g')">g</button>
+            <button class="unit-btn active" id="btn-baby-lbs" onclick="selBabyUnit('lbs')">lbs</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Apariencia -->
     <div class="ss"><div class="ss-t">Apariencia</div>
       <div class="s-card">
@@ -516,66 +543,133 @@ CREATE TRIGGER on_auth_user_created
       </div>
     </div>
 
+    <!-- Contacto -->
+    <div class="ss"><div class="ss-t">Ayuda y contacto</div>
+      <div class="s-card">
+        <div class="s-row" onclick="openContact()" style="cursor:pointer">
+          <div>
+            <div class="sr-lbl">📬 Buzón de sugerencias</div>
+            <div class="sr-sub">Envíanos tus quejas, ideas o comentarios</div>
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-soft)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+    </div>
+
     <div style="text-align:center;padding:8px 0 4px">
-      <div style="font-family:var(--font-serif);font-size:.96rem;color:var(--warm-brown)">🫧 LactaMe v4.0</div>
+      <div style="font-family:var(--font-serif);font-size:.96rem;color:var(--warm-brown)">🫧 LactaMe v4.1</div>
       <div style="font-family:var(--font-sans);font-size:.64rem;color:var(--text-soft);margin-top:3px">Hecho con amor para mamás en lactancia</div>
     </div>
 
   </div>
 
-  <button class="fab" id="main-fab" onclick="openExtModal(null)"><span>＋</span> Nueva extracción</button>
+  <!-- ══ BEBÉ ══ -->
+  <div class="content" id="page-bebe" style="display:none">
+
+    <!-- Setup inicial -->
+    <div id="bebe-setup">
+      <div class="bebe-setup-card">
+        <div class="bebe-setup-icon">👶</div>
+        <div class="bebe-setup-title">Curva de crecimiento</div>
+        <div class="bebe-setup-sub">Registra el peso y talla de tu bebé y compáralos con los estándares de la OMS</div>
+        <div class="fg"><label class="flbl">Nombre del bebé</label><input class="fi" type="text" id="baby-name-input" placeholder="Ej: Sofía"/></div>
+        <div class="fg"><label class="flbl">Fecha de nacimiento</label><input class="fi" type="date" id="baby-dob-input"/></div>
+        <div class="fg"><label class="flbl">Sexo</label>
+          <div class="sex-tog">
+            <button class="sex-btn active" id="sex-m" onclick="selSex('m')">👦 Niño</button>
+            <button class="sex-btn" id="sex-f" onclick="selSex('f')">👧 Niña</button>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="saveBaby()">Guardar y continuar →</button>
+      </div>
+    </div>
+
+    <!-- Main (después del setup) -->
+    <div id="bebe-main" style="display:none">
+
+      <!-- Perfil del bebé -->
+      <div class="baby-profile-card">
+        <div class="baby-avatar" id="baby-avatar-lbl">👶</div>
+        <div class="baby-profile-info">
+          <div class="baby-profile-name" id="baby-profile-name">—</div>
+          <div class="baby-profile-age" id="baby-profile-age">—</div>
+        </div>
+        <button class="baby-edit-btn" onclick="showBabySetup()">✏️ Editar</button>
+      </div>
+
+      <!-- Toggle peso / talla -->
+      <div class="chart-type-tog">
+        <button class="ctog active" id="ctog-weight" onclick="showChart('weight')">⚖️ Peso</button>
+        <button class="ctog" id="ctog-height" onclick="showChart('height')">📏 Talla</button>
+      </div>
+
+      <!-- Gráfica OMS -->
+      <div class="growth-chart-wrap">
+        <svg class="growth-chart" id="growth-svg" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+
+      <!-- Leyenda -->
+      <div class="chart-legend">
+        <div class="legend-item"><span class="legend-line p50"></span>Mediana OMS</div>
+        <div class="legend-item"><span class="legend-area"></span>Rango P15–P85</div>
+        <div class="legend-dot-item"><span class="legend-dot-baby"></span>Tu bebé</div>
+      </div>
+
+      <!-- Descargo -->
+      <div class="who-info">📊 Basado en estándares OMS 2006 · Solo referencia, consulta a tu pediatra</div>
+
+      <!-- Última medición -->
+      <div id="latest-measure-card"></div>
+
+      <!-- Botón agregar -->
+      <button class="home-add" onclick="openMeasureModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nueva medición
+      </button>
+
+      <!-- Historial -->
+      <div class="home-section-title">Historial de mediciones</div>
+      <div id="measure-list"></div>
+
+    </div>
+
+  </div>
+
   <button class="fab fab-comm" id="comm-fab" style="display:none" onclick="openPostModal()">✏️ Publicar</button>
 
-  <!-- BOTTOM NAV — 5 tabs -->
+  <!-- BOTTOM NAV — 3 tabs -->
   <nav class="bottom-nav">
-    <!-- Inicio -->
-    <button class="nav-btn active" id="nav-inicio" onclick="showTab('inicio')">
-      <div class="nav-pip">
-        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
-          <path d="M9 21V12h6v9"/>
-        </svg>
-      </div>
-      <span class="nav-lbl">Inicio</span>
-    </button>
-    <!-- Registro -->
-    <button class="nav-btn" id="nav-registro" onclick="showTab('registro')">
-      <div class="nav-pip">
-        <svg class="nav-svg" viewBox="0 0 200 200" fill="none">
-          <path d="M100 44C100 44 58 92 58 130c0 24 19 40 42 40s42-16 42-40C142 92 100 44 100 44Z" fill="#c97a6e" opacity=".75"/>
-          <path d="M100 140c0 0-18-14-18-23 0-7 6-11 12-7 3 2 5 5 6 7 1-2 3-5 6-7 6-4 12 0 12 7 0 9-18 23-18 23Z" fill="#fff" opacity=".85"/>
-        </svg>
-      </div>
-      <span class="nav-lbl">Registro</span>
-    </button>
     <!-- Estadísticas -->
     <button class="nav-btn" id="nav-estadisticas" onclick="showTab('estadisticas')">
       <div class="nav-pip">
         <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
         </svg>
       </div>
-      <span class="nav-lbl">Stats</span>
+      <span class="nav-lbl">Estadísticas</span>
     </button>
-    <!-- Alarma -->
-    <button class="nav-btn" id="nav-alarma" onclick="showTab('alarma')">
+    <!-- Inicio (centro, con logo) -->
+    <button class="nav-btn nav-center-btn active" id="nav-inicio" onclick="showTab('inicio')">
+      <div class="nav-center-drop">
+        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M100 44C100 44 58 92 58 130c0 24 19 40 42 40s42-16 42-40C142 92 100 44 100 44Z" fill="currentColor" opacity=".85"/>
+          <path d="M100 140c0 0-18-14-18-23 0-7 6-11 12-7 3 2 5 5 6 7 1-2 3-5 6-7 6-4 12 0 12 7 0 9-18 23-18 23Z" fill="white" opacity=".9"/>
+        </svg>
+      </div>
+      <span class="nav-lbl">Inicio</span>
+    </button>
+    <!-- Bebé -->
+    <button class="nav-btn" id="nav-bebe" onclick="showTab('bebe')">
       <div class="nav-pip">
         <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="8"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          <circle cx="12" cy="8" r="3"/>
+          <path d="M6 20v-1a6 6 0 0 1 12 0v1"/>
+          <path d="M9 11.5C9 14 10.3 16 12 16s3-2 3-4.5"/>
         </svg>
       </div>
-      <span class="nav-lbl">Alarma</span>
-    </button>
-    <!-- Perfil -->
-    <button class="nav-btn" id="nav-perfil" onclick="showTab('perfil')">
-      <div class="nav-pip">
-        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="8" r="4"/>
-          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-        </svg>
-      </div>
-      <span class="nav-lbl">Perfil</span>
+      <span class="nav-lbl">Bebé</span>
     </button>
   </nav>
 </div>
@@ -698,6 +792,55 @@ CREATE TRIGGER on_auth_user_created
       <strong style="color:var(--warm-brown)">Próximamente disponible</strong> — te notificaremos al lanzar
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL: MEDICIÓN BEBÉ -->
+<div class="overlay" id="modal-measure" style="display:none" onclick="closeOv(event,'modal-measure')">
+  <div class="modal">
+    <div class="mdrag"></div>
+    <h2>Nueva medición</h2>
+    <div class="fg"><label class="flbl">Fecha</label><input class="fi" type="date" id="m-date"/></div>
+    <div class="form-row">
+      <div class="fg"><label class="flbl" id="m-weight-lbl">Peso (kg)</label><input class="fi" type="number" id="m-weight" placeholder="Ej: 5.2" step="0.1" min="0"/></div>
+      <div class="fg"><label class="flbl">Talla (cm)</label><input class="fi" type="number" id="m-height" placeholder="Ej: 62.5" step="0.1" min="0"/></div>
+    </div>
+    <div class="fg"><label class="flbl">Perímetro cefálico (cm)</label><input class="fi" type="number" id="m-hc" placeholder="Ej: 38.5" step="0.1" min="0"/></div>
+    <div class="fg"><label class="flbl">Notas del pediatra</label><textarea class="ftxt" id="m-notes" placeholder="Ej: Todo bien según el médico..."></textarea></div>
+    <div class="m-actions">
+      <button class="btn-cancel" onclick="closeOv(null,'modal-measure')">Cancelar</button>
+      <button class="btn-save" onclick="saveMeasure()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY: BIENVENIDA (primera vez) -->
+<div class="welcome-overlay" id="welcome-overlay" style="display:none">
+  <div class="welcome-card">
+    <div class="welcome-logo">🫧</div>
+    <div class="welcome-title">¡Bienvenida a LactaMe!</div>
+    <div class="welcome-text">
+      Una aplicación pensada para las mamás. Aquí podrás tener todos tus apuntes de lactancia, banco de leche, crecimiento de tu bebé y mucho más.<br/><br/>
+      Gracias por elegirnos. Estamos encantados de contar contigo y tu apoyo. 💜
+    </div>
+    <button class="btn-primary" onclick="closeWelcome()">¡Empezar mi viaje!</button>
+    <div class="welcome-contact" onclick="closeWelcomeContact()">
+      ¿Tienes alguna queja o sugerencia? <span>Contáctanos</span>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: BUZÓN DE CONTACTO -->
+<div class="overlay" id="modal-contact" style="display:none" onclick="closeOv(event,'modal-contact')">
+  <div class="modal">
+    <div class="mdrag"></div>
+    <h2>📬 Contacta con nosotras</h2>
+    <p style="font-family:var(--font-sans);font-size:.78rem;color:var(--text-soft);margin-bottom:14px;line-height:1.5">Tu mensaje llegará directamente a nuestro equipo. Respondemos lo antes posible. 💜</p>
+    <div class="fg"><label class="flbl">Tu mensaje</label><textarea class="ftxt" id="feedback-msg" placeholder="Cuéntanos tu experiencia, sugerencia o cualquier queja..." style="min-height:120px"></textarea></div>
+    <div class="m-actions">
+      <button class="btn-cancel" onclick="closeOv(null,'modal-contact')">Cancelar</button>
+      <button class="btn-save" onclick="submitFeedback()">📨 Enviar</button>
+    </div>
   </div>
 </div>
 

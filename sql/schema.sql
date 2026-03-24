@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   username     TEXT UNIQUE NOT NULL,
   display_name TEXT NOT NULL,
   plan         TEXT DEFAULT 'free' CHECK (plan IN ('free','premium')),
+  role         TEXT DEFAULT 'usuaria' CHECK (role IN ('owner','admin','embajadora','nutricionista','pediatra','asesora_lactancia','usuaria')),
   settings     JSONB DEFAULT '{"unit":"oz","notif":false,"vibrate":false}'::jsonb,
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
   title        TEXT DEFAULT '',
   body         TEXT NOT NULL,
   anonymous    BOOLEAN DEFAULT FALSE,
+  role         TEXT DEFAULT 'usuaria',
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
@@ -91,6 +93,27 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- ── 7. Si ya tienes la tabla profiles, agrega la columna plan:
+-- ── 7. FEEDBACK / BUZÓN DE CONTACTO ─────────────────────────
+CREATE TABLE IF NOT EXISTS public.feedback (
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id    UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  email      TEXT,
+  message    TEXT NOT NULL,
+  read       BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.feedback ENABLE ROW LEVEL SECURITY;
+-- Usuarias pueden insertar, solo admins pueden leer
+CREATE POLICY "Insertar feedback propio" ON public.feedback FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Admin lee feedback"       ON public.feedback FOR SELECT USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('owner','admin'))
+);
+CREATE POLICY "Admin actualiza feedback" ON public.feedback FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('owner','admin'))
+);
+
+-- ── 8. Si ya tienes las tablas, agrega las columnas faltantes:
 -- ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'free';
+-- ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'usuaria';
+-- ALTER TABLE public.posts    ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'usuaria';
 
