@@ -836,3 +836,13 @@ button:active,
 [data-theme="dark"] .btn-google{background:rgba(20,28,50,.8);border-color:rgba(204,136,136,.2);color:var(--text);}
 .auth-divider{display:flex;align-items:center;gap:10px;margin:12px 0;color:var(--text-soft);font-size:.75rem;}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(139,94,82,.15);}
+
+/* ══ TRIAL ══ */
+.plan-badge.trial{background:linear-gradient(135deg,#f5a623,#e8833a);color:#fff;}
+.trial-banner{background:linear-gradient(135deg,#fff8e8,#fff3d4);border:1.5px solid #f5a623;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.trial-banner-txt{flex:1;display:flex;flex-direction:column;gap:2px;}
+.trial-banner-txt strong{font-size:.85rem;color:#8a6500;}
+.trial-banner-txt span{font-size:.72rem;color:#b38a30;}
+[data-theme="dark"] .trial-banner{background:rgba(32,24,8,.9);border-color:#c8960a;}
+[data-theme="dark"] .trial-banner-txt strong{color:#e8c840;}
+[data-theme="dark"] .trial-banner-txt span{color:#b09020;}

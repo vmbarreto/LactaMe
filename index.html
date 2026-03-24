@@ -489,6 +489,16 @@ CREATE TRIGGER on_auth_user_created
       <div class="plan-badge free" id="perf-plan-badge">🫧 Plan Gratis</div>
     </div>
 
+    <!-- Banner trial por vencer -->
+    <div class="trial-banner" id="trial-banner" style="display:none">
+      <span>⏳</span>
+      <div class="trial-banner-txt">
+        <strong id="trial-days-txt">Tu prueba gratis vence pronto</strong>
+        <span>Suscríbete para no perder el acceso</span>
+      </div>
+      <button class="btn-upgrade" onclick="openSubModal()">Ver planes</button>
+    </div>
+
     <!-- Upgrade card (solo visible en plan free) -->
     <div class="upgrade-card" id="upgrade-card">
       <div class="upgrade-card-icon">✨</div>

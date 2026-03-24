@@ -64,8 +64,8 @@ async function doLogin(){
       if(error)throw error;
       const{data:prof}=await sb.from('profiles').select('*').eq('id',data.user.id).single();
       const roleFromDB=prof?.role||'usuaria';
-      sess={uid:data.user.id,email,name:prof?.display_name,username:prof?.username,settings:prof?.settings||{unit:'oz'},plan:prof?.plan||'free',role:roleFromDB};
-      if(email==='vmbarreto.pro@gmail.com'){sess.role='owner';sess.plan='premium';}
+      sess={uid:data.user.id,email,name:prof?.display_name,username:prof?.username,settings:prof?.settings||{unit:'oz'},plan:prof?.plan||'free',role:roleFromDB,trialEndsAt:prof?.trial_ends_at||null};
+      if(email==='vmbarreto.pro@gmail.com'){sess.role='owner';sess.plan='premium';sess.trialEndsAt=null;}
     } else {
       const u=JSON.parse(localStorage.getItem('lm_users')||'{}')[email];
       if(!u||u.h!==sh(pass))throw new Error('Correo o contraseña incorrectos.');
@@ -406,11 +406,28 @@ function renderPerfil(){
   } else if(roleKey === 'admin'){
     badge.className = 'plan-badge owner';
     badge.textContent = '🛡️ Admin';
+  } else if(roleKey==='embajadora'){
+    badge.className='plan-badge premium';
+    badge.textContent='🌟 Embajadora';
+  } else if(isTrialActive()){
+    const days=trialDaysLeft();
+    badge.className='plan-badge trial';
+    badge.textContent=`⏳ Prueba: ${days} día${days!==1?'s':''}`;
   } else {
-    badge.className = 'plan-badge '+(premium?'premium':'free');
-    badge.textContent = premium ? '✨ LactaMe+' : '🫧 Plan Gratis';
+    badge.className='plan-badge '+(premium?'premium':'free');
+    badge.textContent=premium?'✨ LactaMe+':'🫧 Plan Gratis';
   }
-  document.getElementById('upgrade-card').style.display = premium ? 'none' : 'flex';
+  document.getElementById('upgrade-card').style.display=premium?'none':'flex';
+
+  // Aviso trial por vencer
+  const trialBanner=document.getElementById('trial-banner');
+  if(trialBanner){
+    const days=trialDaysLeft();
+    if(days>0 && days<=4 && !['owner','admin','embajadora'].includes(sess?.role)){
+      trialBanner.style.display='flex';
+      document.getElementById('trial-days-txt').textContent=`Tu prueba gratis vence en ${days} día${days!==1?'s':''}`;
+    } else { trialBanner.style.display='none'; }
+  }
 
   // Ajustes
   document.getElementById('btn-ml').classList.toggle('active', cfg.unit==='ml');
@@ -690,8 +707,14 @@ function subUpgrade(){
   closeOv(null,'modal-sub');
 }
 
+function trialDaysLeft(){
+  if(!sess?.trialEndsAt) return -1;
+  const diff=new Date(sess.trialEndsAt)-Date.now();
+  return Math.max(0,Math.ceil(diff/86400000));
+}
+function isTrialActive(){ return trialDaysLeft()>0; }
 function isPremium(){
-  return sess?.plan === 'premium' || ['owner','admin'].includes(sess?.role);
+  return sess?.plan==='premium' || ['owner','admin','embajadora'].includes(sess?.role) || isTrialActive();
 }
 
 /* ══════════════════════════════════════════
@@ -1155,9 +1178,10 @@ initTheme(); // Aplica tema antes de renderizar
         settings:prof?.settings||{unit:'oz'},
         plan:prof?.plan||'free',
         role:prof?.role||'usuaria',
+        trialEndsAt:prof?.trial_ends_at||null,
         createdAt:session.user.created_at
       };
-      if(session.user.email==='vmbarreto.pro@gmail.com'){sess.role='owner';sess.plan='premium';}
+      if(session.user.email==='vmbarreto.pro@gmail.com'){sess.role='owner';sess.plan='premium';sess.trialEndsAt=null;}
       await launchApp();return;
     }
   } else {
