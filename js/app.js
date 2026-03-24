@@ -63,7 +63,9 @@ async function doLogin(){
       const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
       if(error)throw error;
       const{data:prof}=await sb.from('profiles').select('*').eq('id',data.user.id).single();
-      sess={uid:data.user.id,email,name:prof?.display_name,username:prof?.username,settings:prof?.settings||{unit:'oz'},plan:prof?.plan||'free',role:prof?.role||'usuaria'};
+      const roleFromDB=prof?.role||'usuaria';
+      sess={uid:data.user.id,email,name:prof?.display_name,username:prof?.username,settings:prof?.settings||{unit:'oz'},plan:prof?.plan||'free',role:roleFromDB};
+      if(email==='vmbarreto.pro@gmail.com'){sess.role='owner';sess.plan='premium';}
     } else {
       const u=JSON.parse(localStorage.getItem('lm_users')||'{}')[email];
       if(!u||u.h!==sh(pass))throw new Error('Correo o contraseña incorrectos.');
@@ -1143,6 +1145,7 @@ initTheme(); // Aplica tema antes de renderizar
         role:prof?.role||'usuaria',
         createdAt:session.user.created_at
       };
+      if(session.user.email==='vmbarreto.pro@gmail.com'){sess.role='owner';sess.plan='premium';}
       await launchApp();return;
     }
   } else {
