@@ -63,7 +63,7 @@
 
 *{box-sizing:border-box;margin:0;padding:0;}
 html{background:var(--cream);}
-body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-height:100vh;min-height:100dvh;overflow-x:hidden;transition:background .3s,color .3s;padding-top:var(--sat);}
+body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-height:100vh;min-height:100dvh;overflow-x:hidden;transition:background .3s,color .3s;}
 
 /* ══ ANIMACIONES GLOBALES DE BOTONES ══ */
 button,
@@ -140,7 +140,8 @@ button:active,
 [data-theme="dark"] .land-feat{background:rgba(36,27,22,.7);border-color:rgba(201,122,110,.2);}
 
 /* ══ AUTH ══ */
-.auth-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden;}
+.auth-screen{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(24px + var(--sat)) 24px calc(24px + var(--sab));position:relative;overflow:hidden;}
+#landing-screen{padding-top:var(--sat);}
 .auth-back{position:absolute;top:18px;left:18px;background:rgba(255,255,255,.55);border:none;border-radius:50%;width:38px;height:38px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.88rem;color:var(--warm-brown);backdrop-filter:blur(6px);font-family:var(--font-sans);font-weight:600;}
 .auth-logo{text-align:center;margin-bottom:22px;}
 .auth-logo h1{font-family:var(--font-serif);font-size:2rem;color:var(--warm-brown);font-weight:600;margin-top:6px;}
@@ -173,7 +174,7 @@ button:active,
 .app-shell{display:none;position:relative;z-index:1;}
 
 /* HEADER */
-.header{padding:12px 16px 10px;display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:8px;position:sticky;top:0;z-index:50;background:rgba(253,246,238,.84);backdrop-filter:blur(16px);margin-top:calc(-1 * var(--sat));padding-top:calc(12px + var(--sat));}
+.header{padding:12px 16px 10px;display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:8px;position:sticky;top:0;z-index:50;background:rgba(253,246,238,.97);backdrop-filter:blur(16px);padding-top:calc(12px + var(--sat));}
 .header-center{text-align:center;}
 .header-logo{display:flex;align-items:center;justify-content:center;gap:8px;}
 .hlogo-drop{width:44px;height:44px;}
@@ -828,3 +829,10 @@ button:active,
 
 /* ══ DARK MODE bottom-nav ══ */
 [data-theme="dark"] .bottom-nav{background:rgba(10,14,26,.93);}
+
+/* ══ GOOGLE BUTTON ══ */
+.btn-google{width:100%;padding:13px;border:1.5px solid rgba(139,94,82,.2);border-radius:16px;background:#fff;color:#3d2b24;font-family:var(--font-sans);font-size:.9rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .2s,box-shadow .2s;}
+.btn-google:hover{background:#fafafa;box-shadow:0 2px 12px rgba(0,0,0,.08);}
+[data-theme="dark"] .btn-google{background:rgba(20,28,50,.8);border-color:rgba(204,136,136,.2);color:var(--text);}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:12px 0;color:var(--text-soft);font-size:.75rem;}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(139,94,82,.15);}

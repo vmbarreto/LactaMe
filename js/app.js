@@ -75,6 +75,18 @@ async function doLogin(){
   } catch(e){showErr('login-err',e.message||'Error al iniciar sesión.');}
   finally{loading(false);}
 }
+async function doGoogleLogin(){
+  if(!ONLINE){toast('Google solo disponible en línea.');return;}
+  loading(true);
+  try{
+    const{error}=await sb.auth.signInWithOAuth({
+      provider:'google',
+      options:{redirectTo:window.location.origin}
+    });
+    if(error)throw error;
+  }catch(e){toast('Error con Google: '+e.message);}
+  finally{loading(false);}
+}
 async function doRegister(){
   const name=document.getElementById('rg-name').value.trim();
   const username=document.getElementById('rg-user').value.trim().toLowerCase().replace(/\s+/g,'');
