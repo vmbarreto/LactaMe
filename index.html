@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+
+<!-- ═══ SEO ═══ -->
+<title>LactaMe — Tu compañera de lactancia y extracción</title>
+<meta name="description" content="LactaMe es la app para mamás en lactancia. Registra tus extracciones, sigue tu progreso, configura recordatorios y conéctate con una comunidad de madres."/>
+<meta name="keywords" content="lactancia, extracción de leche, banco de leche materna, registro lactancia, app lactancia, sacaleches"/>
+<meta name="author" content="LactaMe"/>
+<link rel="canonical" href="https://lactame.app/"/>
+
+<!-- ═══ Open Graph ═══ -->
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://lactame.app/"/>
+<meta property="og:title" content="LactaMe — Tu compañera de lactancia"/>
+<meta property="og:description" content="Registra tus extracciones, sigue tu progreso y conecta con una comunidad de mamás. Gratis para siempre en lo esencial."/>
+<meta property="og:image" content="https://lactame.app/og-image.png"/>
+<meta property="og:locale" content="es_CO"/>
+<meta property="og:site_name" content="LactaMe"/>
+
+<!-- ═══ Twitter Card ═══ -->
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="LactaMe — Tu compañera de lactancia"/>
+<meta name="twitter:description" content="App de registro y apoyo para mamás en lactancia. Gratis, segura y diseñada con amor."/>
+
+<!-- ═══ iOS / Apple PWA ═══ -->
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="LactaMe"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+
+<!-- ═══ Theme color ═══ -->
+<meta name="theme-color" content="#fdf6ee" media="(prefers-color-scheme: light)"/>
+<meta name="theme-color" content="#1a1410" media="(prefers-color-scheme: dark)"/>
+
+<!-- ═══ Schema.org ═══ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "MobileApplication",
+  "name": "LactaMe",
+  "description": "App de registro y apoyo para madres en lactancia y extracción de leche materna",
+  "applicationCategory": "HealthApplication",
+  "operatingSystem": "iOS, Android, Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "inLanguage": "es"
+}
+</script>
+
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<!--
+╔══════════════════════════════════════════════════════════════╗
+║              LACTAME v4.0 — GUÍA DE DESPLIEGUE              ║
+╠══════════════════════════════════════════════════════════════╣
+║  SUPABASE (base de datos):                                   ║
+║  1. Crea cuenta en https://supabase.com                      ║
+║  2. Crea un proyecto nuevo                                   ║
+║  3. SQL Editor → ejecuta el bloque SQL de abajo              ║
+║  4. Settings > API → copia URL y anon key                    ║
+║  5. Authentication > Settings → desactiva "Confirm email"    ║
+║                                                              ║
+║  SUSCRIPCIONES:                                              ║
+║  Para pagos reales integra Stripe con un backend:            ║
+║  - Node/Python que escuche webhooks de Stripe                ║
+║  - Al recibir pago, actualiza plan en tabla subscriptions    ║
+║  - El frontend consulta el plan al hacer login               ║
+║                                                              ║
+║  DESPLIEGUE:                                                 ║
+║  - Netlify Drop: arrastra el archivo a netlify.com/drop      ║
+║  - Vercel: conecta tu repositorio de GitHub                  ║
+╚══════════════════════════════════════════════════════════════╝
+
+══ SQL PARA EJECUTAR EN SUPABASE > SQL EDITOR ══════════════════
+
+-- ── 1. PERFILES (con columna plan) ──────────────────────────
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id           UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  username     TEXT UNIQUE NOT NULL,
+  display_name TEXT NOT NULL,
+  plan         TEXT DEFAULT 'free' CHECK (plan IN ('free','premium')),
+  settings     JSONB DEFAULT '{"unit":"oz","notif":false,"vibrate":false}'::jsonb,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Perfil propio" ON public.profiles FOR ALL USING (auth.uid() = id);
+
+-- ── 2. EXTRACCIONES ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.extractions (
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id    UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  date       DATE NOT NULL,
+  time       TIME NOT NULL,
+  amount_ml  DECIMAL(8,2) DEFAULT 0,
+  duration   INTEGER DEFAULT 0,
+  notes      TEXT DEFAULT '',
+  storage    VARCHAR(20) DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.extractions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Extracciones propias" ON public.extractions FOR ALL USING (auth.uid() = user_id);
+
+-- ── 3. PUBLICACIONES COMUNIDAD ──────────────────────────────
+CREATE TABLE IF NOT EXISTS public.posts (
+  id           UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id      UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  display_name TEXT, username TEXT,
+  group_name   TEXT NOT NULL,
+  title        TEXT DEFAULT '',
+  body         TEXT NOT NULL,
+  anonymous    BOOLEAN DEFAULT FALSE,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Leer posts"          ON public.posts FOR SELECT USING (true);
+CREATE POLICY "Crear posts"         ON public.posts FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Eliminar posts propios" ON public.posts FOR DELETE USING (auth.uid() = user_id);
+
+-- ── 4. LIKES ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.likes (
+  id      UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  post_id UUID REFERENCES public.posts(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id)  ON DELETE CASCADE NOT NULL,
+  UNIQUE(post_id, user_id)
+);
+ALTER TABLE public.likes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Leer likes"     ON public.likes FOR SELECT USING (true);
+CREATE POLICY "Gestionar likes" ON public.likes FOR ALL   USING (auth.uid() = user_id);
+
+-- ── 5. SUSCRIPCIONES (para integración futura con Stripe) ───
+CREATE TABLE IF NOT EXISTS public.subscriptions (
+  id                     UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id                UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+  plan                   TEXT DEFAULT 'free' CHECK (plan IN ('free','premium')),
+  status                 TEXT DEFAULT 'active' CHECK (status IN ('active','cancelled','expired')),
+  stripe_customer_id     TEXT,
+  stripe_subscription_id TEXT,
+  current_period_start   TIMESTAMPTZ,
+  current_period_end     TIMESTAMPTZ,
+  created_at             TIMESTAMPTZ DEFAULT NOW(),
+  updated_at             TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Ver suscripción propia"    ON public.subscriptions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Editar suscripción propia" ON public.subscriptions FOR ALL    USING (auth.uid() = user_id);
+
+-- ── 6. TRIGGER: crear perfil + suscripción al registrarse ───
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, username, display_name, plan)
+  VALUES (
+    NEW.id,
+    NEW.raw_user_meta_data->>'username',
+    NEW.raw_user_meta_data->>'display_name',
+    'free'
+  );
+  INSERT INTO public.subscriptions (user_id, plan, status)
+  VALUES (NEW.id, 'free', 'active');
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ── 7. Si ya tienes la tabla profiles, agrega la columna plan:
+-- ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'free';
+
+═════════════════════════════════════════════════════════════════
+-->
+
+<link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body>
+
+<div class="wc-bg"><span class="wc1"></span><span class="wc2"></span><span class="wc3"></span><span class="wc4"></span><span class="wc5"></span></div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading-overlay">
+  <svg class="loading-drop" viewBox="0 0 200 200" fill="none">
+    <path d="M100 44C100 44 58 92 58 130c0 24 19 40 42 40s42-16 42-40C142 92 100 44 100 44Z" fill="#f5d5cf" opacity=".9"/>
+    <path d="M100 140c0 0-18-14-18-23 0-7 6-11 12-7 3 2 5 5 6 7 1-2 3-5 6-7 6-4 12 0 12 7 0 9-18 23-18 23Z" fill="#c97a6e" opacity=".8"/>
+  </svg>
+  <div class="loading-txt">cargando...</div>
+</div>
+
+<!-- ══ LANDING ══ -->
+<div class="landing" id="landing-screen">
+  <svg class="land-bot l" width="72" height="220" viewBox="0 0 72 220" fill="none">
+    <line x1="36" y1="220" x2="36" y2="18" stroke="#a8b89a" stroke-width="1.1" opacity=".5"/>
+    <ellipse cx="22" cy="158" rx="15" ry="6" fill="none" stroke="#a8b89a" stroke-width=".85" opacity=".48" transform="rotate(-38 22 158)"/>
+    <ellipse cx="48" cy="132" rx="13" ry="5.5" fill="none" stroke="#a8b89a" stroke-width=".8" opacity=".42" transform="rotate(30 48 132)"/>
+    <ellipse cx="20" cy="104" rx="14" ry="5.5" fill="none" stroke="#a8b89a" stroke-width=".8" opacity=".42" transform="rotate(-42 20 104)"/>
+    <ellipse cx="46" cy="78" rx="12" ry="5" fill="none" stroke="#a8b89a" stroke-width=".75" opacity=".36" transform="rotate(32 46 78)"/>
+    <circle cx="36" cy="18" r="4" fill="none" stroke="#e8a598" stroke-width=".8" opacity=".5"/>
+    <circle cx="36" cy="18" r="1.5" fill="#e8a598" opacity=".4"/>
+  </svg>
+  <svg class="land-bot r" width="72" height="220" viewBox="0 0 72 220" fill="none">
+    <line x1="36" y1="220" x2="36" y2="18" stroke="#a8b89a" stroke-width="1.1" opacity=".5"/>
+    <ellipse cx="50" cy="155" rx="15" ry="6" fill="none" stroke="#a8b89a" stroke-width=".85" opacity=".48" transform="rotate(38 50 155)"/>
+    <ellipse cx="23" cy="129" rx="13" ry="5.5" fill="none" stroke="#a8b89a" stroke-width=".8" opacity=".42" transform="rotate(-30 23 129)"/>
+    <ellipse cx="52" cy="102" rx="14" ry="5.5" fill="none" stroke="#a8b89a" stroke-width=".8" opacity=".42" transform="rotate(42 52 102)"/>
+    <ellipse cx="25" cy="76" rx="12" ry="5" fill="none" stroke="#a8b89a" stroke-width=".75" opacity=".36" transform="rotate(-32 25 76)"/>
+    <circle cx="36" cy="18" r="4" fill="none" stroke="#dce8d5" stroke-width=".8" opacity=".55"/>
+    <circle cx="36" cy="18" r="1.5" fill="#a8b89a" opacity=".4"/>
+  </svg>
+  <div class="land-drop">
+    <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="112" r="76" stroke="#f5d5cf" stroke-width=".7" opacity=".4"/>
+      <circle cx="100" cy="112" r="60" stroke="#e8a598" stroke-width=".5" opacity=".28"/>
+      <ellipse cx="100" cy="170" rx="38" ry="7" fill="#e8a598" opacity=".14"/>
+      <path d="M100 44C100 44 58 92 58 130c0 24 19 40 42 40s42-16 42-40C142 92 100 44 100 44Z" fill="#f5d5cf" opacity=".88"/>
+      <path d="M100 58C100 58 68 98 68 130c0 20 14 33 32 33s32-13 32-33C132 98 100 58 100 58Z" fill="#fffaf6" opacity=".65"/>
+      <path d="M100 44C100 44 58 92 58 130c0 24 19 40 42 40s42-16 42-40C142 92 100 44 100 44Z" fill="url(#ldg)" opacity=".45"/>
+      <ellipse cx="82" cy="90" rx="7" ry="14" fill="#fff" opacity=".42" transform="rotate(-20 82 90)"/>
+      <path d="M100 140c0 0-18-14-18-23 0-7 6-11 12-7 3 2 5 5 6 7 1-2 3-5 6-7 6-4 12 0 12 7 0 9-18 23-18 23Z" fill="#c97a6e" opacity=".78"/>
+      <ellipse cx="92" cy="114" rx="3" ry="5" fill="#fff" opacity=".32" transform="rotate(-15 92 114)"/>
+      <circle cx="149" cy="72" r="3" fill="#f5d5cf" opacity=".55"/>
+      <circle cx="52" cy="82" r="2" fill="#dce8d5" opacity=".65"/>
+      <defs><linearGradient id="ldg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f5d5cf"/><stop offset="100%" stop-color="#e8a598"/></linearGradient></defs>
+    </svg>
+  </div>
+  <div class="land-title">LactaMe</div>
+  <div class="land-tag">cada gota, un acto de amor</div>
+  <div class="land-sub">Tu compañera de lactancia y banco de leche · 100% privado</div>
+  <div class="land-actions">
+    <button class="btn-lm" onclick="goToAuth('register')">Comenzar gratis →</button>
+    <button class="btn-ls" onclick="goToAuth('login')">Ya tengo una cuenta</button>
+  </div>
+  <div class="land-features">
+    <div class="land-feat">
+      <div class="land-feat-icon">📊</div>
+      <div class="land-feat-txt">Registra y analiza</div>
+    </div>
+    <div class="land-feat">
+      <div class="land-feat-icon">⏰</div>
+      <div class="land-feat-txt">Recordatorios</div>
+    </div>
+    <div class="land-feat">
+      <div class="land-feat-icon">💜</div>
+      <div class="land-feat-txt">Comunidad</div>
+    </div>
+  </div>
+  <div class="land-proof">Diseñada con <strong>amor</strong> para mamás en lactancia</div>
+  <div class="land-dots"><div class="ld a"></div><div class="ld"></div><div class="ld"></div></div>
+</div>
+
+<!-- ══ AUTH ══ -->
+<div class="auth-screen" id="auth-screen" style="display:none">
+  <button class="auth-back" onclick="backToLanding()">←</button>
+  <div class="auth-logo">
+    <svg width="48" height="48" viewBox="0 0 200 200" fill="none">
+      <path d="M100 44C100 44 58 92 58 130c0 24 19 40 42 40s42-16 42-40C142 92 100 44 100 44Z" fill="#f5d5cf" opacity=".9"/>
+      <path d="M100 44C100 44 58 92 58 130c0 24 19 40 42 40s42-16 42-40C142 92 100 44 100 44Z" fill="url(#adg)" opacity=".4"/>
+      <path d="M100 140c0 0-18-14-18-23 0-7 6-11 12-7 3 2 5 5 6 7 1-2 3-5 6-7 6-4 12 0 12 7 0 9-18 23-18 23Z" fill="#c97a6e" opacity=".8"/>
+      <defs><linearGradient id="adg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f5d5cf"/><stop offset="100%" stop-color="#e8a598"/></linearGradient></defs>
+    </svg>
+    <h1>LactaMe</h1>
+    <p>Tu banco de leche materna</p>
+  </div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')" id="auth-tab-login">Iniciar sesión</div>
+      <div class="auth-tab" onclick="switchTab('register')" id="auth-tab-register">Registrarse</div>
+    </div>
+    <div class="auth-form active" id="auth-form-login">
+      <div class="auth-err" id="login-err"></div>
+      <div class="fg"><label class="flbl">Correo electrónico</label><input class="fi" type="email" id="li-email" placeholder="tu@correo.com" autocomplete="email"/></div>
+      <div class="fg"><label class="flbl">Contraseña</label>
+        <div class="pw-wrap"><input class="fi" type="password" id="li-pass" placeholder="••••••••" autocomplete="current-password"/>
+          <button class="pw-eye" type="button" onclick="togglePw('li-pass',this)">ver</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="doLogin()">Entrar →</button>
+    </div>
+    <div class="auth-form" id="auth-form-register">
+      <div class="auth-err" id="reg-err"></div>
+      <div class="fg"><label class="flbl">Nombre visible</label><input class="fi" type="text" id="rg-name" placeholder="Ej: María" autocomplete="off"/></div>
+      <div class="fg"><label class="flbl">Usuario (en comunidad)</label><input class="fi" type="text" id="rg-user" placeholder="Ej: mamacris" autocomplete="off"/></div>
+      <div class="fg"><label class="flbl">Correo electrónico</label><input class="fi" type="email" id="rg-email" placeholder="tu@correo.com" autocomplete="email"/></div>
+      <div class="fg"><label class="flbl">Contraseña</label>
+        <div class="pw-wrap"><input class="fi" type="password" id="rg-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+          <button class="pw-eye" type="button" onclick="togglePw('rg-pass',this)">ver</button>
+        </div>
+      </div>
+      <div class="fg"><label class="flbl">Confirmar contraseña</label>
+        <div class="pw-wrap"><input class="fi" type="password" id="rg-pass2" placeholder="Repite la contraseña"/>
+          <button class="pw-eye" type="button" onclick="togglePw('rg-pass2',this)">ver</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="doRegister()">Crear cuenta →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP SHELL ══ -->
+<div class="app-shell" id="app-shell">
+  <div class="header">
+    <button class="hbtn" onclick="showTab('perfil')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#8b5e52" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+    <div class="header-center">
+      <div class="header-logo">
+        <svg class="hlogo-drop" viewBox="0 0 200 200" fill="none">
+          <path d="M100 44C100 44 58 92 58 130c0 24 19 40 42 40s42-16 42-40C142 92 100 44 100 44Z" fill="#f5d5cf" opacity=".9"/>
+          <path d="M100 44C100 44 58 92 58 130c0 24 19 40 42 40s42-16 42-40C142 92 100 44 100 44Z" fill="url(#hldg)" opacity=".4"/>
+          <path d="M100 140c0 0-18-14-18-23 0-7 6-11 12-7 3 2 5 5 6 7 1-2 3-5 6-7 6-4 12 0 12 7 0 9-18 23-18 23Z" fill="#c97a6e" opacity=".8"/>
+          <defs><linearGradient id="hldg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f5d5cf"/><stop offset="100%" stop-color="#e8a598"/></linearGradient></defs>
+        </svg>
+        <h1>LactaMe</h1>
+      </div>
+      <div class="header-user">Hola, <strong id="hdr-name">—</strong> 👋</div>
+    </div>
+    <div class="header-right">
+      <button class="hbtn hbtn-comm" id="hbtn-comm" onclick="showTab('comunidad')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Comunidad</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Pages -->
+
+  <!-- ══ INICIO ══ -->
+  <div class="content" id="page-inicio" style="display:none">
+
+    <!-- Saludo -->
+    <div class="greeting-card">
+      <div class="greeting-time" id="greeting-time">Buenos días</div>
+      <div class="greeting-name" id="greeting-name">—</div>
+      <div class="greeting-sub" id="greeting-sub">¿Lista para registrar tu extracción de hoy?</div>
+    </div>
+
+    <!-- Racha -->
+    <div class="streak-card" id="streak-card">
+      <div class="streak-fire">🔥</div>
+      <div class="streak-info">
+        <div class="streak-num" id="streak-count">0</div>
+        <div class="streak-lbl" id="streak-lbl">días seguidos · ¡empieza hoy!</div>
+      </div>
+    </div>
+
+    <!-- Stats de hoy -->
+    <div class="home-stats">
+      <div class="home-stat">
+        <div class="hval" id="h-today">0</div>
+        <div class="hlbl">Hoy extraído</div>
+      </div>
+      <div class="home-stat">
+        <div class="hval" id="h-sessions">0</div>
+        <div class="hlbl">Sesiones hoy</div>
+      </div>
+    </div>
+
+    <!-- Alarma activa -->
+    <div class="home-alarm" id="home-alarm-card" style="display:none">
+      <div class="home-alarm-dot"></div>
+      <div class="home-alarm-info">
+        <div class="home-alarm-lbl">Próxima extracción</div>
+        <div class="home-alarm-time" id="h-alarm-time">—</div>
+        <div class="home-alarm-cd" id="h-alarm-cd"></div>
+      </div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--rose-dark)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg>
+    </div>
+
+    <!-- Botón rápido -->
+    <button class="home-add" onclick="openExtModal(null)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nueva extracción
+    </button>
+
+    <!-- Últimas extracciones -->
+    <div class="home-section-title">Últimas extracciones</div>
+    <div class="home-recent" id="home-recent"></div>
+
+  </div>
+
+  <div class="content" id="page-estadisticas" style="display:none">
+    <div class="week-chart"><h3 id="wct">📈 Últimos 7 días</h3><div class="bar-row" id="week-bars"></div><div style="display:flex;gap:6px" id="week-lbls"></div></div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="val" id="s-avg">0</div><div class="lbl">Promedio</div></div>
+      <div class="stat-card"><div class="val" id="s-frz">0</div><div class="lbl">Congeladas</div></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="val" id="s-wtot">0</div><div class="lbl">Esta semana</div></div>
+      <div class="stat-card"><div class="val" id="s-rfr">0</div><div class="lbl">Refrigeradas</div></div>
+    </div>
+  </div>
+
+  <div class="content" id="page-registro">
+    <div class="setup-banner" id="setup-banner">
+      <div class="setup-banner-title">⚡ Modo sin conexión</div>
+      <p>Los datos solo se guardan en este dispositivo. Agrega tus claves de Supabase para guardar en la nube.</p>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="val" id="s-today">0</div><div class="lbl">Hoy extraído</div></div>
+      <div class="stat-card"><div class="val" id="s-total">0</div><div class="lbl">Extracciones totales</div></div>
+    </div>
+    <div id="ext-list"></div>
+  </div>
+
+  <div class="content" id="page-alarma" style="display:none">
+    <div class="alarm-hero"><div class="alarm-hero-icon">⏰</div><div class="alarm-hero-title">Recordatorio de extracción</div><div class="alarm-hero-sub">Configura el intervalo que mejor se adapte a tu rutina</div></div>
+    <div class="alarm-card">
+      <h3>¿Cada cuánto quieres tu alarma?</h3>
+      <div style="font-size:.67rem;color:var(--text-soft);font-family:var(--font-sans);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">Atajos rápidos</div>
+      <div class="presets-row" id="presets-row">
+        <div class="pchip" data-h="0" data-m="30" onclick="applyPreset(0,30)">30 min</div>
+        <div class="pchip" data-h="1" data-m="0" onclick="applyPreset(1,0)">1h</div>
+        <div class="pchip" data-h="1" data-m="30" onclick="applyPreset(1,30)">1h 30m</div>
+        <div class="pchip active" data-h="2" data-m="0" onclick="applyPreset(2,0)">2h</div>
+        <div class="pchip" data-h="3" data-m="0" onclick="applyPreset(3,0)">3h</div>
+        <div class="pchip" data-h="4" data-m="0" onclick="applyPreset(4,0)">4h</div>
+        <div class="pchip" data-h="6" data-m="0" onclick="applyPreset(6,0)">6h</div>
+        <div class="pchip" data-h="8" data-m="0" onclick="applyPreset(8,0)">8h</div>
+      </div>
+      <div style="font-size:.67rem;color:var(--text-soft);font-family:var(--font-sans);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">Personalizado</div>
+      <div class="sg">
+        <div><div class="slbl">Horas</div><div class="stepper"><button class="stbtn" onclick="adjI('h',-1)">−</button><div class="stval"><div class="sv-n" id="iv-h">2</div><div class="sv-u">horas</div></div><button class="stbtn" onclick="adjI('h',1)">+</button></div></div>
+        <div><div class="slbl">Minutos</div><div class="stepper"><button class="stbtn" onclick="adjI('m',-15)">−</button><div class="stval"><div class="sv-n" id="iv-m">00</div><div class="sv-u">minutos</div></div><button class="stbtn" onclick="adjI('m',15)">+</button></div></div>
+      </div>
+      <div class="fg"><label class="flbl">Hora de inicio (opcional)</label><input type="time" class="fi" id="alarm-t"/></div>
+      <button class="btn-save" style="width:100%;border-radius:50px;padding:13px" onclick="activateAlarm()">🔔 Activar recordatorio</button>
+    </div>
+    <div id="alarm-status"></div>
+  </div>
+
+  <div class="content" id="page-comunidad" style="display:none">
+    <div class="comm-banner"><div class="comm-banner-title">💜 Comunidad de madres — no es consejo médico</div><p>Espacio de apoyo entre mamás. Las publicaciones <strong>no reemplazan orientación médica</strong> ni de un especialista en lactancia.</p></div>
+    <div style="font-size:.68rem;font-weight:600;font-family:var(--font-sans);color:var(--text-soft);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">Grupos</div>
+    <div class="gscroll" id="gscroll">
+      <div class="gchip active" data-g="all" onclick="filterGrp('all')">✨ Todos</div>
+      <div class="gchip" data-g="inicio" onclick="filterGrp('inicio')">🌱 Primeros pasos</div>
+      <div class="gchip" data-g="banco" onclick="filterGrp('banco')">🍼 Banco de leche</div>
+      <div class="gchip" data-g="destete" onclick="filterGrp('destete')">🌙 Destete</div>
+      <div class="gchip" data-g="mi-historia" onclick="filterGrp('mi-historia')">🌸 Mi historia</div>
+    </div>
+    <div id="posts-list"></div>
+    <div class="empty" id="posts-empty" style="display:none"><div class="empty-icon">💬</div><h3>Sin publicaciones aún</h3><p>¡Sé la primera en compartir!</p></div>
+  </div>
+
+  <!-- ══ PERFIL ══ -->
+  <div class="content" id="page-perfil" style="display:none">
+
+    <!-- Hero de perfil -->
+    <div class="perf-hero">
+      <div class="perf-avatar" id="perf-avatar">M</div>
+      <div class="perf-name" id="perf-name">—</div>
+      <div class="perf-email" id="perf-email">—</div>
+      <div class="perf-since" id="perf-since"></div>
+      <div class="plan-badge free" id="perf-plan-badge">🫧 Plan Gratis</div>
+    </div>
+
+    <!-- Upgrade card (solo visible en plan free) -->
+    <div class="upgrade-card" id="upgrade-card">
+      <div class="upgrade-card-icon">✨</div>
+      <div class="upgrade-card-info">
+        <div class="upgrade-card-title">Desbloquea LactaMe+</div>
+        <div class="upgrade-card-sub">Stats avanzados, exportar datos y más</div>
+      </div>
+      <button class="btn-upgrade" onclick="openSubModal()">Ver planes</button>
+    </div>
+
+    <!-- Cuenta -->
+    <div class="ss"><div class="ss-t">Cuenta</div>
+      <div class="s-card">
+        <div class="s-row"><div><div class="sr-lbl" id="s-uname">—</div><div class="sr-sub">Cuenta activa</div></div>
+          <svg width="22" height="22" viewBox="0 0 200 200" fill="none"><path d="M100 44C100 44 58 92 58 130c0 24 19 40 42 40s42-16 42-40C142 92 100 44 100 44Z" fill="#f5d5cf"/><path d="M100 140c0 0-18-14-18-23 0-7 6-11 12-7 3 2 5 5 6 7 1-2 3-5 6-7 6-4 12 0 12 7 0 9-18 23-18 23Z" fill="#c97a6e" opacity=".8"/></svg>
+        </div>
+        <div class="s-row"><div><div class="sr-lbl">Cerrar sesión</div><div class="sr-sub">Tus datos quedan guardados</div></div><button class="btn-logout" onclick="doLogout()">Salir</button></div>
+      </div>
+    </div>
+
+    <!-- Unidades -->
+    <div class="ss"><div class="ss-t">Unidades</div>
+      <div class="s-card">
+        <div class="s-row"><div><div class="sr-lbl">Unidad de volumen</div><div class="sr-sub">Se aplica a todo el registro</div></div><div class="unit-tog"><button class="unit-btn" id="btn-ml" onclick="setUnit('ml')">ml</button><button class="unit-btn active" id="btn-oz" onclick="setUnit('oz')">oz</button></div></div>
+        <div class="s-row"><div><div class="sr-lbl">Conversión</div><div class="sr-sub" id="conv-txt">1 oz = 29.574 ml</div></div></div>
+      </div>
+    </div>
+
+    <!-- Apariencia -->
+    <div class="ss"><div class="ss-t">Apariencia</div>
+      <div class="s-card">
+        <div class="theme-row">
+          <div><div class="sr-lbl"><span class="theme-icon" id="theme-icon">🌙</span> Modo oscuro</div><div class="sr-sub">Cambia el tema de la app</div></div>
+          <label class="tgl"><input type="checkbox" id="tgl-theme" onchange="toggleTheme(this.checked)"/><div class="tgl-t"></div></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notificaciones -->
+    <div class="ss"><div class="ss-t">Notificaciones</div>
+      <div class="s-card">
+        <div class="s-row"><div><div class="sr-lbl">Recordatorios</div><div class="sr-sub">Notificaciones del navegador</div></div><label class="tgl"><input type="checkbox" id="tgl-notif" onchange="setNotif(this.checked)"/><div class="tgl-t"></div></label></div>
+        <div class="s-row"><div><div class="sr-lbl">Vibración</div><div class="sr-sub">Vibrar al sonar el recordatorio</div></div><label class="tgl"><input type="checkbox" id="tgl-vib" onchange="setVib(this.checked)"/><div class="tgl-t"></div></label></div>
+      </div>
+    </div>
+
+    <!-- Datos -->
+    <div class="ss"><div class="ss-t">Datos</div>
+      <div class="s-card">
+        <div class="s-row"><div><div class="sr-lbl">Extracciones guardadas</div><div class="sr-sub" id="s-cnt">0</div></div></div>
+        <div class="s-row"><div><div class="sr-lbl">Borrar mis extracciones</div><div class="sr-sub">No se puede deshacer</div></div><button class="btn-danger" onclick="clearData()">Borrar</button></div>
+      </div>
+    </div>
+
+    <div style="text-align:center;padding:8px 0 4px">
+      <div style="font-family:var(--font-serif);font-size:.96rem;color:var(--warm-brown)">🫧 LactaMe v4.0</div>
+      <div style="font-family:var(--font-sans);font-size:.64rem;color:var(--text-soft);margin-top:3px">Hecho con amor para mamás en lactancia</div>
+    </div>
+
+  </div>
+
+  <button class="fab" id="main-fab" onclick="openExtModal(null)"><span>＋</span> Nueva extracción</button>
+  <button class="fab fab-comm" id="comm-fab" style="display:none" onclick="openPostModal()">✏️ Publicar</button>
+
+  <!-- BOTTOM NAV — 5 tabs -->
+  <nav class="bottom-nav">
+    <!-- Inicio -->
+    <button class="nav-btn active" id="nav-inicio" onclick="showTab('inicio')">
+      <div class="nav-pip">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+          <path d="M9 21V12h6v9"/>
+        </svg>
+      </div>
+      <span class="nav-lbl">Inicio</span>
+    </button>
+    <!-- Registro -->
+    <button class="nav-btn" id="nav-registro" onclick="showTab('registro')">
+      <div class="nav-pip">
+        <svg class="nav-svg" viewBox="0 0 200 200" fill="none">
+          <path d="M100 44C100 44 58 92 58 130c0 24 19 40 42 40s42-16 42-40C142 92 100 44 100 44Z" fill="#c97a6e" opacity=".75"/>
+          <path d="M100 140c0 0-18-14-18-23 0-7 6-11 12-7 3 2 5 5 6 7 1-2 3-5 6-7 6-4 12 0 12 7 0 9-18 23-18 23Z" fill="#fff" opacity=".85"/>
+        </svg>
+      </div>
+      <span class="nav-lbl">Registro</span>
+    </button>
+    <!-- Estadísticas -->
+    <button class="nav-btn" id="nav-estadisticas" onclick="showTab('estadisticas')">
+      <div class="nav-pip">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+      </div>
+      <span class="nav-lbl">Stats</span>
+    </button>
+    <!-- Alarma -->
+    <button class="nav-btn" id="nav-alarma" onclick="showTab('alarma')">
+      <div class="nav-pip">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="8"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </div>
+      <span class="nav-lbl">Alarma</span>
+    </button>
+    <!-- Perfil -->
+    <button class="nav-btn" id="nav-perfil" onclick="showTab('perfil')">
+      <div class="nav-pip">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+      </div>
+      <span class="nav-lbl">Perfil</span>
+    </button>
+  </nav>
+</div>
+
+<!-- MODAL: EXTRACCIÓN -->
+<div class="overlay" id="modal-ext" style="display:none" onclick="closeOv(event,'modal-ext')">
+  <div class="modal">
+    <div class="mdrag"></div>
+    <h2 id="ext-title">Nueva Extracción</h2>
+    <div class="form-row">
+      <div class="fg"><label class="flbl">Fecha</label><input type="date" class="fi" id="f-date"/></div>
+      <div class="fg"><label class="flbl">Hora</label><input type="time" class="fi" id="f-time"/></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label class="flbl" id="f-amt-lbl">Cantidad (oz)</label><input type="number" class="fi" id="f-amt" placeholder="Ej: 3.0" min="0" step="0.1"/></div>
+      <div class="fg"><label class="flbl">Duración (min)</label><input type="number" class="fi" id="f-dur" placeholder="Ej: 15" min="0"/></div>
+    </div>
+    <div class="fg"><label class="flbl">Almacenamiento</label>
+      <div class="stor-tog">
+        <div class="stor-btn" id="sbr" onclick="selStor('ref')"><span class="si">🧊</span>Refrigerada</div>
+        <div class="stor-btn" id="sbf" onclick="selStor('frz')"><span class="si">❄️</span>Congelada</div>
+      </div>
+    </div>
+    <div class="fg"><label class="flbl">Notas</label><textarea class="ftxt" id="f-notes" placeholder="Algo que quieras anotar..."></textarea></div>
+    <div class="m-actions">
+      <button class="btn-cancel" onclick="closeOv(null,'modal-ext')">Cancelar</button>
+      <button class="btn-save" onclick="saveExt()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PUBLICACIÓN -->
+<div class="overlay" id="modal-post" style="display:none" onclick="closeOv(event,'modal-post')">
+  <div class="modal">
+    <div class="mdrag"></div>
+    <h2>Nueva publicación</h2>
+    <div style="font-size:.7rem;font-weight:600;font-family:var(--font-sans);color:var(--text-soft);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">Grupo</div>
+    <div class="gselbtn-grid" id="gsbg">
+      <div class="gselbtn active" data-g="inicio" onclick="selPG('inicio')">🌱 Primeros pasos</div>
+      <div class="gselbtn" data-g="banco" onclick="selPG('banco')">🍼 Banco de leche</div>
+      <div class="gselbtn" data-g="destete" onclick="selPG('destete')">🌙 Destete</div>
+      <div class="gselbtn" data-g="mi-historia" onclick="selPG('mi-historia')">🌸 Mi historia</div>
+    </div>
+    <div class="fg"><label class="flbl">Título</label><input class="fi" type="text" id="p-title" placeholder="Ej: Mi primera semana extrayendo..."/></div>
+    <div class="fg"><label class="flbl">Tu mensaje</label><textarea class="ftxt" id="p-body" placeholder="Comparte tu experiencia..."></textarea></div>
+    <label class="anon-row" onclick="document.getElementById('anon-cb').click()">
+      <div class="anon-row-l">
+        <div style="font-size:1.1rem">🎭</div>
+        <div><div class="anon-lbl">Publicar de forma anónima</div><div class="anon-sub">Tu nombre no aparecerá</div></div>
+      </div>
+      <label class="tgl" onclick="event.stopPropagation()"><input type="checkbox" id="anon-cb"/><div class="tgl-t"></div></label>
+    </label>
+    <div style="background:rgba(253,243,234,.9);border-radius:24px;padding:10px 16px;font-family:var(--font-sans);font-size:.7rem;color:#8b6a40;margin-bottom:14px;line-height:1.5;">💜 Este espacio es de apoyo entre mamás. No reemplaza el consejo médico profesional.</div>
+    <div class="m-actions">
+      <button class="btn-cancel" onclick="closeOv(null,'modal-post')">Cancelar</button>
+      <button class="btn-save" onclick="savePost()">💬 Publicar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: SUSCRIPCIÓN -->
+<div class="overlay" id="modal-sub" style="display:none" onclick="closeOv(event,'modal-sub')">
+  <div class="modal sub-modal">
+    <div class="mdrag"></div>
+
+    <!-- Hero -->
+    <div class="sub-hero">
+      <div class="sub-hero-badge">✨ LactaMe+</div>
+      <div class="sub-hero-title">Desbloquea todo<br/>el potencial</div>
+      <div class="sub-hero-sub">Más datos, más control, más apoyo</div>
+    </div>
+
+    <!-- Toggle período -->
+    <div class="sub-period-tog">
+      <button class="sub-period-btn active" id="sub-btn-mes" onclick="subPeriod('mes')">Mensual</button>
+      <button class="sub-period-btn" id="sub-btn-año" onclick="subPeriod('año')">Anual <span class="sub-save-badge">−33%</span></button>
+    </div>
+
+    <!-- Cards de planes -->
+    <div class="sub-plans">
+
+      <!-- Gratis -->
+      <div class="sub-plan free">
+        <div class="sub-plan-label">Gratis</div>
+        <div class="sub-plan-price">$0</div>
+        <div class="sub-plan-period">para siempre</div>
+        <ul class="sub-plan-features">
+          <li><span class="feat-check">✅</span>Registro extracciones</li>
+          <li><span class="feat-check">✅</span>Stats 7 días</li>
+          <li><span class="feat-check">✅</span>Alarma</li>
+          <li><span class="feat-check">✅</span>Leer comunidad</li>
+          <li class="no"><span class="feat-check">✗</span>Stats mensuales</li>
+          <li class="no"><span class="feat-check">✗</span>Publicar en comunidad</li>
+          <li class="no"><span class="feat-check">✗</span>Exportar datos</li>
+        </ul>
+        <button class="sub-cta-free" onclick="closeOv(null,'modal-sub')">Continuar gratis</button>
+      </div>
+
+      <!-- Premium -->
+      <div class="sub-plan premium">
+        <div class="sub-plan-tag">Popular</div>
+        <div class="sub-plan-label">LactaMe+</div>
+        <div class="sub-plan-price" id="sub-price">$4.99</div>
+        <div class="sub-plan-period" id="sub-period-lbl">por mes</div>
+        <ul class="sub-plan-features">
+          <li><span class="feat-check">✅</span>Todo lo gratis</li>
+          <li><span class="feat-check">✅</span>Stats mensuales</li>
+          <li><span class="feat-check">✅</span>Publicar comunidad</li>
+          <li><span class="feat-check">✅</span>Exportar CSV</li>
+          <li><span class="feat-check">✅</span>Historial completo</li>
+          <li><span class="feat-check">✅</span>Soporte prioritario</li>
+        </ul>
+        <button class="sub-cta-premium" onclick="subUpgrade()">Suscribirme →</button>
+      </div>
+
+    </div>
+
+    <div class="sub-disclaimer">
+      🔒 Pago seguro · Cancela cuando quieras<br/>
+      <strong style="color:var(--warm-brown)">Próximamente disponible</strong> — te notificaremos al lanzar
+    </div>
+
+  </div>
+</div>
+
+<!-- Ajustes movidos al tab Perfil -->
+
+<div class="toast" id="toast" style="display:none"></div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
